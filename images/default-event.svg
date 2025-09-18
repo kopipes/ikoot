@@ -1,0 +1,41 @@
+<svg width="400" height="300" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="400" height="300" fill="url(#bg-gradient)"/>
+  
+  <!-- Event icon -->
+  <g transform="translate(200, 150)">
+    <!-- Calendar icon -->
+    <rect x="-40" y="-35" width="80" height="70" rx="8" fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.4)" stroke-width="2"/>
+    <rect x="-35" y="-25" width="70" height="50" rx="4" fill="rgba(255,255,255,0.1)"/>
+    
+    <!-- Calendar rings -->
+    <rect x="-25" y="-45" width="4" height="20" rx="2" fill="rgba(255,255,255,0.6)"/>
+    <rect x="21" y="-45" width="4" height="20" rx="2" fill="rgba(255,255,255,0.6)"/>
+    
+    <!-- Calendar grid -->
+    <g fill="rgba(255,255,255,0.6)">
+      <rect x="-25" y="-15" width="10" height="8" rx="1"/>
+      <rect x="-10" y="-15" width="10" height="8" rx="1"/>
+      <rect x="5" y="-15" width="10" height="8" rx="1"/>
+      <rect x="20" y="-15" width="10" height="8" rx="1"/>
+      
+      <rect x="-25" y="-2" width="10" height="8" rx="1"/>
+      <rect x="-10" y="-2" width="10" height="8" rx="1"/>
+      <rect x="5" y="-2" width="10" height="8" rx="1"/>
+      <rect x="20" y="-2" width="10" height="8" rx="1"/>
+      
+      <rect x="-25" y="11" width="10" height="8" rx="1"/>
+      <rect x="-10" y="11" width="10" height="8" rx="1"/>
+    </g>
+  </g>
+  
+  <!-- "No Image" text -->
+  <text x="200" y="220" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-family="Arial, sans-serif" font-size="16" font-weight="500">Event Image</text>
+</svg>

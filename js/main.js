@@ -701,7 +701,7 @@ function updateFeaturedEventsBanner(events) {
     
     // Create slides for each featured event
     heroCarousel.innerHTML = events.map((event, index) => {
-        const imageUrl = event.image_url || event.image;
+        const imageUrl = event.image_url || event.image || 'images/default-event.svg';
         const eventDate = event.start_date || event.date;
         const endDate = event.end_date || event.endDate;
         const description = event.short_description || event.description;
@@ -736,9 +736,9 @@ function updateFeaturedEventsBanner(events) {
     // Set background image of first event
     const heroBanner = document.querySelector('.hero-banner');
     const firstEvent = events[0];
-    const firstImageUrl = firstEvent.image_url || firstEvent.image;
+    const firstImageUrl = firstEvent.image_url || firstEvent.image || 'images/default-event.svg';
     if (firstImageUrl) {
-        heroBanner.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('${firstImageUrl}')`;
+        heroBanner.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('${firstImageUrl}'), url('images/default-event.svg')`;
     }
     
     // Set up event listeners for the hero carousel
@@ -773,14 +773,14 @@ function renderEventCarousel(type, eventList) {
 
     carousel.innerHTML = eventList.map(event => {
         // Handle both API data format and sample data format
-        const imageUrl = event.image_url || event.image;
+        const imageUrl = event.image_url || event.image || 'images/default-event.svg';
         const eventDate = event.start_date || event.date;
         const description = event.short_description || event.description;
         const price = typeof event.price === 'string' ? event.price : event.price.toString();
         
         return `
             <div class="event-card" data-event-id="${event.id}">
-                <div class="event-image" style="background-image: url('${imageUrl}')">
+                <div class="event-image" style="background-image: url('${imageUrl}'), url('images/default-event.svg'); background-size: cover; background-position: center;">
                     <div class="event-badge">${addBadge(event)}</div>
                 </div>
                 <div class="event-details">
@@ -1288,6 +1288,14 @@ function openQRScanner() {
 }
 
 function showMyEvents() {
+    if (!currentUser) {
+        showToast('Please login to view your events', 'error');
+        openModal('loginModal');
+        return;
+    }
+    
+    closeMobileMenu(); // Close mobile menu when opening My Events
+    
     const favoriteEventsList = [...events.current, ...events.upcoming]
         .filter(event => favoriteEvents.includes(event.id));
 
@@ -1295,32 +1303,58 @@ function showMyEvents() {
         <div class="modal active" id="myEventsModal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>My Events</h2>
+                    <h2><i class="fas fa-heart" style="color: #e91e63; margin-right: 10px;"></i>My Favorite Events</h2>
                     <button class="modal-close">&times;</button>
                 </div>
                 <div style="padding: 25px;">
                     ${favoriteEventsList.length > 0 ? 
-                        favoriteEventsList.map(event => `
-                            <div class="event-card" style="margin-bottom: 20px; cursor: pointer;" onclick="showEventDetails(${event.id})">
-                                <div class="event-image" style="background-image: url('${event.image}')">
-                                    <div class="event-badge">${event.badge}</div>
-                                </div>
-                                <div class="event-details">
-                                    <h3 class="event-title">${event.title}</h3>
-                                    <div class="event-meta">
-                                        <div class="event-date-small">
-                                            <i class="fas fa-calendar"></i>
-                                            <span>${formatDate(event.start_date || event.date)}${event.end_date || event.endDate ? ' - ' + formatDate(event.end_date || event.endDate) : ''}</span>
+                        favoriteEventsList.map(event => {
+                            // Handle both API data format and sample data format
+                            const imageUrl = event.image_url || event.image || 'images/default-event.svg';
+                            const eventStartDate = event.start_date || event.date;
+                            const eventEndDate = event.end_date || event.endDate;
+                            const description = event.short_description || event.description || 'No description available';
+                            const badge = event.badge || (event.status === 'live' ? 'Live Now' : event.status === 'upcoming' ? 'Upcoming' : event.category || 'Event');
+                            
+                            return `
+                                <div class="event-card" style="margin-bottom: 20px; cursor: pointer; border: 1px solid #e0e0e0; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: transform 0.2s ease;" 
+                                     onclick="showEventDetails(${event.id})" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                    <div class="event-image" style="background-image: url('${imageUrl}'), url('images/default-event.svg'); background-size: cover; background-position: center; height: 200px; position: relative;">
+                                        <div class="event-badge" style="position: absolute; top: 15px; left: 15px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">${badge}</div>
+                                        <div style="position: absolute; top: 15px; right: 15px; background: rgba(233, 30, 99, 0.9); color: white; padding: 6px 8px; border-radius: 50%; font-size: 0.9rem;">
+                                            <i class="fas fa-heart"></i>
                                         </div>
-                                        <div class="event-location-small">
-                                            <i class="fas fa-map-marker-alt"></i>
-                                            <span>${event.location}</span>
+                                    </div>
+                                    <div class="event-details" style="padding: 20px;">
+                                        <h3 class="event-title" style="margin: 0 0 15px 0; color: #333; font-size: 1.3rem; font-weight: 600;">${event.title}</h3>
+                                        <p style="color: #666; margin: 0 0 15px 0; line-height: 1.4; font-size: 0.9rem;">${description.substring(0, 120)}${description.length > 120 ? '...' : ''}</p>
+                                        <div class="event-meta" style="display: flex; flex-direction: column; gap: 8px;">
+                                            <div class="event-date-small" style="display: flex; align-items: center; gap: 8px; color: #4CAF50; font-size: 0.9rem;">
+                                                <i class="fas fa-calendar"></i>
+                                                <span>${formatDate(eventStartDate)}${eventEndDate ? ' - ' + formatDate(eventEndDate) : ''}</span>
+                                            </div>
+                                            <div class="event-location-small" style="display: flex; align-items: center; gap: 8px; color: #2196F3; font-size: 0.9rem;">
+                                                <i class="fas fa-map-marker-alt"></i>
+                                                <span>${event.location}</span>
+                                            </div>
+                                        </div>
+                                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #f0f0f0;">
+                                            <button class="btn btn-outline" onclick="event.stopPropagation(); toggleFavorite(${event.id}); document.getElementById('myEventsModal').remove();" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                                <i class="fas fa-heart-broken"></i> Remove from Favorites
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        `).join('') :
-                        '<p style="text-align: center; color: #666;">No favorite events yet. Start adding events to your favorites!</p>'
+                            `;
+                        }).join('') :
+                        `<div style="text-align: center; padding: 60px 20px; color: #666;">
+                            <i class="fas fa-heart-broken" style="font-size: 4rem; margin-bottom: 20px; color: #ddd;"></i>
+                            <h3 style="margin: 0 0 10px 0; color: #999;">No Favorite Events Yet</h3>
+                            <p style="margin: 0; font-size: 0.9rem; line-height: 1.5;">Browse events and click the heart icon to add them to your favorites!</p>
+                            <button class="btn btn-primary" onclick="document.getElementById('myEventsModal').remove(); document.querySelector('.bottom-nav-item[data-page=\"home\"]').click();" style="margin-top: 20px;">
+                                <i class="fas fa-search"></i> Browse Events
+                            </button>
+                        </div>`
                     }
                 </div>
             </div>
@@ -1332,6 +1366,13 @@ function showMyEvents() {
     const modal = document.getElementById('myEventsModal');
     modal.querySelector('.modal-close').addEventListener('click', () => {
         modal.remove();
+    });
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
     });
 }
 

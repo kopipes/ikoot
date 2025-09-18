@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Scanner Debug Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #1976D2;
+        }
+        .result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        .btn {
+            background: #1976D2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .btn:hover {
+            background: #1565C0;
+        }
+        .camera-container {
+            width: 100%;
+            height: 300px;
+            background: #000;
+            border-radius: 10px;
+            position: relative;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        video {
+            width: 100%;
+            height: 100%;
+            border-radius: 10px;
+        }
+        #logs {
+            background: #000;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 QR Scanner Debug Test</h1>
+        <p>This page helps debug QR scanner camera initialization issues.</p>
+
+        <div class="test-section">
+            <h3>📱 Environment Check</h3>
+            <div id="environmentResults"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🎥 Camera Test</h3>
+            <button class="btn" onclick="testCameraAccess()">Test Camera Access</button>
+            <button class="btn" onclick="testVideoElement()">Test Video Element</button>
+            <button class="btn" onclick="stopCameraTest()">Stop Camera</button>
+            <div class="camera-container">
+                <video id="testVideo" autoplay muted playsinline></video>
+            </div>
+            <div id="cameraResults"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔧 QR Scanner Instance Test</h3>
+            <button class="btn" onclick="testQRScannerInstance()">Test QR Scanner</button>
+            <button class="btn" onclick="startQRScannerTest()">Start QR Scanner</button>
+            <div id="qrScannerResults"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📋 Console Logs</h3>
+            <button class="btn" onclick="clearLogs()">Clear Logs</button>
+            <div id="logs"></div>
+        </div>
+    </div>
+
+    <script>
+        // Override console.log to capture logs
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        function addLog(message, type = 'log') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('logs');
+            const color = type === 'error' ? '#ff4444' : type === 'warn' ? '#ffaa00' : '#00ff00';
+            logElement.innerHTML += `<span style="color: ${color}">[${timestamp}] ${type.toUpperCase()}: ${message}</span>\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalLog(...args);
+            addLog(args.join(' '), 'log');
+        };
+        
+        console.error = function(...args) {
+            originalError(...args);
+            addLog(args.join(' '), 'error');
+        };
+        
+        console.warn = function(...args) {
+            originalWarn(...args);
+            addLog(args.join(' '), 'warn');
+        };
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result ${type}`;
+            resultDiv.textContent = message;
+            element.appendChild(resultDiv);
+        }
+
+        function clearResults(elementId) {
+            document.getElementById(elementId).innerHTML = '';
+        }
+
+        // Environment check
+        function checkEnvironment() {
+            clearResults('environmentResults');
+            
+            // Protocol check
+            const isSecure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+            showResult('environmentResults', 
+                `Protocol: ${location.protocol} (${isSecure ? 'SECURE ✅' : 'INSECURE ❌'})`, 
+                isSecure ? 'success' : 'error'
+            );
+
+            // getUserMedia support
+            const hasUserMedia = navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
+            showResult('environmentResults', 
+                `getUserMedia: ${hasUserMedia ? 'SUPPORTED ✅' : 'NOT SUPPORTED ❌'}`, 
+                hasUserMedia ? 'success' : 'error'
+            );
+
+            // Browser info
+            showResult('environmentResults', `User Agent: ${navigator.userAgent}`, 'info');
+            
+            console.log('Environment check completed');
+        }
+
+        let testStream = null;
+
+        async function testCameraAccess() {
+            clearResults('cameraResults');
+            console.log('Testing camera access...');
+
+            try {
+                const constraints = {
+                    video: {
+                        width: { min: 640, ideal: 1280 },
+                        height: { min: 480, ideal: 720 }
+                    }
+                };
+
+                console.log('Requesting camera with constraints:', constraints);
+                testStream = await navigator.mediaDevices.getUserMedia(constraints);
+                
+                showResult('cameraResults', 'Camera access GRANTED ✅', 'success');
+                console.log('Camera stream obtained:', testStream);
+                
+                const tracks = testStream.getVideoTracks();
+                if (tracks.length > 0) {
+                    const track = tracks[0];
+                    const settings = track.getSettings();
+                    showResult('cameraResults', `Camera: ${track.label}`, 'info');
+                    showResult('cameraResults', `Resolution: ${settings.width}x${settings.height}`, 'info');
+                    console.log('Camera track settings:', settings);
+                }
+
+            } catch (error) {
+                showResult('cameraResults', `Camera access DENIED: ${error.name} - ${error.message}`, 'error');
+                console.error('Camera access error:', error);
+            }
+        }
+
+        function testVideoElement() {
+            clearResults('cameraResults');
+            console.log('Testing video element...');
+
+            const video = document.getElementById('testVideo');
+            if (!video) {
+                showResult('cameraResults', 'Video element NOT FOUND ❌', 'error');
+                return;
+            }
+
+            showResult('cameraResults', 'Video element found ✅', 'success');
+
+            if (testStream) {
+                video.srcObject = testStream;
+                showResult('cameraResults', 'Stream assigned to video ✅', 'success');
+                
+                video.addEventListener('loadedmetadata', () => {
+                    showResult('cameraResults', `Video loaded: ${video.videoWidth}x${video.videoHeight}`, 'success');
+                    console.log('Video metadata loaded');
+                }, { once: true });
+
+                video.addEventListener('error', (e) => {
+                    showResult('cameraResults', `Video error: ${e.message}`, 'error');
+                    console.error('Video error:', e);
+                });
+
+                video.play().then(() => {
+                    showResult('cameraResults', 'Video playing ✅', 'success');
+                    console.log('Video playback started');
+                }).catch(error => {
+                    showResult('cameraResults', `Video play failed: ${error.message}`, 'error');
+                    console.error('Video play error:', error);
+                });
+            } else {
+                showResult('cameraResults', 'No stream available. Test camera access first.', 'error');
+            }
+        }
+
+        function stopCameraTest() {
+            if (testStream) {
+                testStream.getTracks().forEach(track => track.stop());
+                testStream = null;
+                showResult('cameraResults', 'Camera stopped ✅', 'success');
+                console.log('Camera stream stopped');
+            }
+
+            const video = document.getElementById('testVideo');
+            if (video) {
+                video.srcObject = null;
+            }
+        }
+
+        function testQRScannerInstance() {
+            clearResults('qrScannerResults');
+            console.log('Testing QR Scanner instance...');
+
+            // Check if QRScanner class exists
+            if (typeof QRScanner !== 'undefined') {
+                showResult('qrScannerResults', 'QRScanner class found ✅', 'success');
+            } else {
+                showResult('qrScannerResults', 'QRScanner class NOT FOUND ❌', 'error');
+            }
+
+            // Check if global instance exists
+            if (typeof qrScannerInstance !== 'undefined' && qrScannerInstance !== null) {
+                showResult('qrScannerResults', 'qrScannerInstance exists ✅', 'success');
+                console.log('QR Scanner instance:', qrScannerInstance);
+            } else {
+                showResult('qrScannerResults', 'qrScannerInstance NOT FOUND ❌', 'error');
+            }
+
+            // Check if startQRScanner function exists
+            if (typeof startQRScanner === 'function') {
+                showResult('qrScannerResults', 'startQRScanner function found ✅', 'success');
+            } else {
+                showResult('qrScannerResults', 'startQRScanner function NOT FOUND ❌', 'error');
+            }
+        }
+
+        function startQRScannerTest() {
+            console.log('Testing QR Scanner start...');
+
+            try {
+                if (typeof startQRScanner === 'function') {
+                    startQRScanner();
+                    showResult('qrScannerResults', 'startQRScanner called ✅', 'success');
+                } else if (typeof QRScanner !== 'undefined') {
+                    // Try to create instance manually
+                    const scanner = new QRScanner();
+                    scanner.startCamera();
+                    showResult('qrScannerResults', 'QRScanner created manually ✅', 'success');
+                } else {
+                    showResult('qrScannerResults', 'Cannot start QR Scanner ❌', 'error');
+                }
+            } catch (error) {
+                showResult('qrScannerResults', `QR Scanner start failed: ${error.message}`, 'error');
+                console.error('QR Scanner error:', error);
+            }
+        }
+
+        // Run environment check on page load
+        window.addEventListener('DOMContentLoaded', checkEnvironment);
+    </script>
+
+    <!-- Load QR Scanner (if available) -->
+    <script src="../js/qr-scanner.js" onerror="console.error('Failed to load qr-scanner.js')"></script>
+</body>
+</html>

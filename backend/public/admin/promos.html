@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Promo Management - Ikoot Admin</title>
+    <link rel="stylesheet" href="css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>IKOOT</h2>
+                <span>Admin Panel</span>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="index.html" class="nav-item">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="index.html" class="nav-item">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Events</span>
+                </a>
+                <a href="index.html" class="nav-item">
+                    <i class="fas fa-users"></i>
+                    <span>Users</span>
+                </a>
+                <a href="index.html" class="nav-item">
+                    <i class="fas fa-ticket-alt"></i>
+                    <span>Bookings</span>
+                </a>
+                <a href="promos.html" class="nav-item active">
+                    <i class="fas fa-tags"></i>
+                    <span>Promos</span>
+                </a>
+                <a href="index.html" class="nav-item">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Analytics</span>
+                </a>
+                <a href="index.html" class="nav-item">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="admin-profile">
+                    <div class="profile-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="profile-info">
+                        <div class="profile-name" id="adminName">Admin</div>
+                        <div class="profile-email" id="adminEmail">admin@ikoot.com</div>
+                    </div>
+                </div>
+                <button class="btn-logout" id="logoutBtn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="content-header">
+                <h1><i class="fas fa-tags"></i> Promo Management</h1>
+                <button class="btn btn-primary" onclick="openCreatePromoModal()">
+                    <i class="fas fa-plus"></i> Create Promo
+                </button>
+            </div>
+
+            <!-- Promo Statistics -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-tags"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalPromos">0</h3>
+                        <p>Total Promos</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="activePromos">0</h3>
+                        <p>Active Promos</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalUsage">0</h3>
+                        <p>Total Usage</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Promo Table -->
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Title</th>
+                            <th>Type</th>
+                            <th>Value</th>
+                            <th>Usage</th>
+                            <th>Status</th>
+                            <th>Valid Until</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="promosTableBody">
+                        <!-- Promos will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Create/Edit Promo Modal -->
+    <div class="modal" id="promoModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="promoModalTitle">Create New Promo</h3>
+                <button class="modal-close" onclick="closePromoModal()">&times;</button>
+            </div>
+            <form id="promoForm" class="modal-body">
+                <div class="form-group">
+                    <label for="promoCode">Promo Code *</label>
+                    <input type="text" id="promoCode" name="code" required 
+                           placeholder="e.g., SUMMER2024" 
+                           style="text-transform: uppercase;">
+                </div>
+                
+                <div class="form-group">
+                    <label for="promoTitle">Title *</label>
+                    <input type="text" id="promoTitle" name="title" required 
+                           placeholder="e.g., Summer Special Discount">
+                </div>
+                
+                <div class="form-group">
+                    <label for="promoDescription">Description *</label>
+                    <textarea id="promoDescription" name="description" required 
+                              placeholder="Describe your promo..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="promoType">Promo Type *</label>
+                    <select id="promoType" name="promo_type" required onchange="handlePromoTypeChange()">
+                        <option value="">Select Type</option>
+                        <option value="discount">Discount</option>
+                        <option value="free_entry">Free Entry</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+                
+                <!-- Discount Options (shown when promo_type = 'discount') -->
+                <div id="discountOptions" class="form-section" style="display: none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="discountType">Discount Type</label>
+                            <select id="discountType" name="discount_type">
+                                <option value="percentage">Percentage (%)</option>
+                                <option value="fixed">Fixed Amount (Rp)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="discountValue">Discount Value</label>
+                            <input type="number" id="discountValue" name="discount_value" 
+                                   min="0" placeholder="e.g., 20">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Custom Value (shown when promo_type = 'custom') -->
+                <div id="customOptions" class="form-section" style="display: none;">
+                    <div class="form-group">
+                        <label for="customValue">Custom Value</label>
+                        <input type="text" id="customValue" name="custom_value" 
+                               placeholder="e.g., Free T-shirt, VIP Access">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="maxUsage">Max Usage</label>
+                        <input type="number" id="maxUsage" name="max_usage" 
+                               min="1" placeholder="Leave empty for unlimited">
+                    </div>
+                    <div class="form-group">
+                        <label for="validUntil">Valid Until *</label>
+                        <input type="datetime-local" id="validUntil" name="valid_until" required>
+                    </div>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closePromoModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Promo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- QR Code Modal -->
+    <div class="modal" id="qrModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>QR Code</h3>
+                <button class="modal-close" onclick="closeQRModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="text-align: center;">
+                <div id="qrCodeContainer">
+                    <img id="qrCodeImage" src="" alt="QR Code" style="max-width: 300px; max-height: 300px;">
+                </div>
+                <div style="margin-top: 20px;">
+                    <h4 id="qrCodeTitle"></h4>
+                    <p id="qrCodeDescription"></p>
+                    <div class="qr-actions">
+                        <button class="btn btn-secondary" onclick="downloadQR()">
+                            <i class="fas fa-download"></i> Download QR
+                        </button>
+                        <button class="btn btn-primary" onclick="printQR()">
+                            <i class="fas fa-print"></i> Print QR
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <script src="js/admin.js"></script>
+    <script src="js/promo-admin.js"></script>
+</body>
+</html>

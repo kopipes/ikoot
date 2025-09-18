@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ikoot - Event Management Platform</title>
+    <link rel="icon" type="image/svg+xml" href="images/ikoot-logo-exact.svg">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <!-- Logo -->
+                <div class="logo">
+                    <img src="images/ikoot-logo-exact.svg" alt="Ikoot Logo" class="logo-image">
+                    <div class="logo-text">
+                        <h1>ikoot</h1>
+                        <span>Events</span>
+                    </div>
+                </div>
+
+                <!-- Right Side Container -->
+                <div class="header-right">
+                    <!-- User Greeting (shown when logged in) -->
+                    <div class="user-greeting" id="userGreeting" style="display: none;">
+                        <span class="greeting-text">Hello, <span id="userName">User</span></span>
+                    </div>
+                    
+                    <!-- Desktop Auth Buttons -->
+                    <div class="auth-buttons desktop-only" id="desktopAuthButtons">
+                        <button class="btn btn-outline" id="loginBtn">Login</button>
+                        <button class="btn btn-primary" id="signupBtn">Sign Up</button>
+                    </div>
+
+                    <!-- Hamburger Menu -->
+                    <button class="hamburger" id="hamburgerBtn">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Dropdown Menu -->
+        <div class="mobile-menu" id="mobileMenu">
+            <div class="mobile-menu-content">
+                <div class="mobile-auth">
+                    <button class="btn btn-outline mobile-login">Login</button>
+                    <button class="btn btn-primary mobile-signup">Sign Up</button>
+                </div>
+                <nav class="mobile-nav" id="mobileNav">
+                    <a href="#" class="mobile-nav-item" onclick="showMyPoints()">My Points</a>
+                    <a href="#" class="mobile-nav-item">My Events</a>
+                    <a href="#" class="mobile-nav-item">Edit Profile</a>
+                    <a href="#" class="mobile-nav-item">Terms and Conditions</a>
+                    <a href="#" class="mobile-nav-item">Privacy Policy</a>
+                    <a href="#" class="mobile-nav-item logout-item">Logout</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <!-- Hero Banner -->
+        <section class="hero-banner" id="heroBanner">
+            <div class="hero-content">
+                <div class="hero-overlay">
+                    <div class="container">
+                        <div class="hero-carousel-container">
+                            <div class="hero-carousel" id="heroCarousel">
+                                <!-- Featured events will be loaded dynamically -->
+                                <div class="hero-slide">
+                                    <div class="hero-text">
+                                        <h2>Featured Events</h2>
+                                        <h1 id="heroEventTitle">Loading Featured Events...</h1>
+                                        <p id="heroEventDescription">Please wait while we load the featured events.</p>
+                                        <div class="hero-event-info">
+                                            <div class="event-date">
+                                                <i class="fas fa-calendar"></i>
+                                                <span id="heroEventDate">--</span>
+                                            </div>
+                                            <div class="event-location">
+                                                <i class="fas fa-map-marker-alt"></i>
+                                                <span id="heroEventLocation">--</span>
+                                            </div>
+                                        </div>
+                                        <button class="btn btn-primary btn-large" id="heroGetTickets">Get Tickets</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Hero Carousel Navigation -->
+                            <button class="hero-carousel-btn prev" id="heroPrev">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <button class="hero-carousel-btn next" id="heroNext">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Hero Carousel Dots -->
+        <div class="hero-dots-container">
+            <div class="hero-indicators" id="heroIndicators">
+                <!-- Indicators will be generated dynamically -->
+            </div>
+        </div>
+
+        <!-- Current Events -->
+        <section class="events-section">
+            <div class="container">
+                <h2 class="section-title">Current Events</h2>
+                <div class="carousel-container">
+                    <div class="carousel" id="currentEventsCarousel">
+                        <!-- Events will be loaded dynamically -->
+                    </div>
+                    <button class="carousel-btn prev" id="currentEventsPrev">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button class="carousel-btn next" id="currentEventsNext">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Upcoming Events -->
+        <section class="events-section">
+            <div class="container">
+                <h2 class="section-title">Upcoming Events</h2>
+                <div class="carousel-container">
+                    <div class="carousel" id="upcomingEventsCarousel">
+                        <!-- Events will be loaded dynamically -->
+                    </div>
+                    <button class="carousel-btn prev" id="upcomingEventsPrev">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button class="carousel-btn next" id="upcomingEventsNext">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <div class="bottom-nav-item active" data-page="home">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </div>
+        <div class="bottom-nav-item" data-page="qr-scanner">
+            <i class="fas fa-qrcode"></i>
+            <span>QR Scanner</span>
+        </div>
+        <div class="bottom-nav-item" data-page="my-events">
+            <i class="fas fa-heart"></i>
+            <span>My Events</span>
+        </div>
+        <div class="bottom-nav-item" data-page="profile">
+            <i class="fas fa-user"></i>
+            <span>Profile</span>
+        </div>
+    </nav>
+
+    <!-- Login Modal -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Login to Ikoot</h2>
+                <button class="modal-close" id="loginModalClose">&times;</button>
+            </div>
+            <form class="auth-form" id="loginForm">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" name="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">Login</button>
+                <div class="auth-switch">
+                    <p>Don't have an account? <a href="#" id="switchToSignup">Sign up</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Signup Modal -->
+    <div class="modal" id="signupModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Sign Up for Ikoot</h2>
+                <button class="modal-close" id="signupModalClose">&times;</button>
+            </div>
+            <form class="auth-form" id="signupForm">
+                <div class="form-group">
+                    <label for="signupName">Full Name</label>
+                    <input type="text" id="signupName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="signupEmail">Email</label>
+                    <input type="email" id="signupEmail" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="signupPassword">Password</label>
+                    <input type="password" id="signupPassword" name="password" required>
+                </div>
+                <div class="form-group">
+                    <label for="signupConfirmPassword">Confirm Password</label>
+                    <input type="password" id="signupConfirmPassword" name="confirmPassword" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">Sign Up</button>
+                <div class="auth-switch">
+                    <p>Already have an account? <a href="#" id="switchToLogin">Login</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- My Points Modal -->
+    <div class="modal" id="myPointsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-star"></i> My Points</h2>
+                <button class="modal-close" id="myPointsModalClose">&times;</button>
+            </div>
+            <div class="modal-body" id="myPointsContent">
+                <!-- Points content will be loaded dynamically -->
+                <div class="loading-spinner" style="text-align: center; padding: 40px;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #1976D2;"></i>
+                    <p>Loading your points...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Scanner Modal -->
+    <div class="modal" id="qrModal">
+        <div class="modal-content qr-modal-content">
+            <div class="modal-header">
+                <h2>QR Code Scanner</h2>
+                <button class="modal-close" id="qrModalClose">&times;</button>
+            </div>
+            <div class="qr-scanner">
+                <div class="camera-container">
+                    <video id="qrVideo" autoplay muted playsinline></video>
+                    <div class="scanner-overlay">
+                        <div class="scanner-frame"></div>
+                    </div>
+                </div>
+                <p class="scanner-instructions">Position the QR code within the frame to scan</p>
+                <div class="scanner-result" id="scannerResult" style="display: none;">
+                    <h3>Promo Found!</h3>
+                    <div class="promo-details">
+                        <p id="promoTitle"></p>
+                        <p id="promoDescription"></p>
+                        <button class="btn btn-primary" id="claimPromo">Claim Promo</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <script src="js/main.js"></script>
+    <script src="js/qr-scanner.js"></script>
+</body>
+</html>

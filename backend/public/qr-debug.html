@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Scanner Debug - IKOOT</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .btn {
+            background: #1976D2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 8px;
+            font-size: 14px;
+            width: 100%;
+            max-width: 300px;
+        }
+        .btn:hover {
+            background: #1565C0;
+        }
+        .btn.success { background: #4CAF50; }
+        .btn.warning { background: #FF9800; }
+        .btn.danger { background: #f44336; }
+        .qr-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 16px;
+        }
+        .result {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #1976D2;
+            display: none;
+        }
+        .result.show {
+            display: block;
+        }
+        .result.success { 
+            background: #d4edda; 
+            border-left-color: #28a745; 
+        }
+        .result.error { 
+            background: #f8d7da; 
+            border-left-color: #dc3545; 
+        }
+        .result.info {
+            background: #d1ecf1;
+            border-left-color: #17a2b8;
+        }
+        .preset-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .user-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .points-display {
+            background: linear-gradient(135deg, #1976D2, #4CAF50);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 QR Scanner Debug Tool</h1>
+        <p>Test the QR code handling without camera access</p>
+        
+        <div class="user-info" id="userInfo">
+            <strong>👤 Test User:</strong> debug-user@ikoot.com
+            <div class="points-display" id="pointsDisplay">
+                <div style="font-size: 1.5rem; font-weight: bold;">⭐ <span id="pointsCount">0</span></div>
+                <div style="font-size: 0.9rem;">Total Loyalty Points</div>
+            </div>
+        </div>
+        
+        <div>
+            <h3>📱 Simulate QR Code Scan</h3>
+            <input type="text" id="qrInput" class="qr-input" placeholder="Enter QR code data (e.g., IKOOT_EVENT:2)" />
+            <button class="btn" onclick="simulateScan()">🔍 Simulate Scan</button>
+        </div>
+        
+        <div class="preset-buttons">
+            <button class="btn success" onclick="testQR('IKOOT_EVENT:2')">🎪 Food Truck Festival</button>
+            <button class="btn success" onclick="testQR('IKOOT_EVENT:5')">🎨 Art Gallery</button>
+            <button class="btn success" onclick="testQR('IKOOT_EVENT:8')">🍽️ Business Dinner</button>
+            <button class="btn success" onclick="testQR('IKOOT_EVENT:1')">🎵 Jazz Festival</button>
+            <button class="btn warning" onclick="testQR('IKOOT_PROMO:JAZZ50')">🎁 Jazz 50% OFF</button>
+            <button class="btn warning" onclick="testQR('IKOOT_PROMO:IKOOT2024')">🎁 Welcome 20% OFF</button>
+            <button class="btn danger" onclick="testQR('invalid_qr_format')">❌ Invalid QR</button>
+            <button class="btn" onclick="testQR('{\"title\":\"JSON Promo\",\"discount\":\"25% OFF\"}')">📄 JSON Format</button>
+        </div>
+        
+        <div id="result" class="result">
+            <div id="resultContent"></div>
+        </div>
+        
+        <div style="margin-top: 30px;">
+            <h3>📋 Testing Instructions</h3>
+            <ol>
+                <li>Use the preset buttons to test different QR code types</li>
+                <li>Event QR codes should trigger loyalty point awards</li>
+                <li>Promo QR codes should show discount information</li>
+                <li>Invalid formats should show error messages</li>
+                <li>Try the same event twice to test duplicate prevention</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // Mock user data
+        let currentUser = {
+            email: 'debug-user@ikoot.com',
+            name: 'Debug User',
+            points: 0
+        };
+        
+        // Track scanned events to prevent duplicates (client-side tracking for demo)
+        let scannedEvents = new Set();
+        
+        function simulateScan() {
+            const qrData = document.getElementById('qrInput').value.trim();
+            if (!qrData) {
+                showResult('Please enter QR code data', 'error');
+                return;
+            }
+            testQR(qrData);
+        }
+        
+        async function testQR(qrData) {
+            document.getElementById('qrInput').value = qrData;
+            showResult(`🔍 Processing QR: <code>${qrData}</code>`, 'info');
+            
+            console.log('QR Code detected:', qrData);
+
+            // Handle different QR code formats (same logic as frontend)
+            if (qrData.startsWith('IKOOT_EVENT:')) {
+                // Handle event check-in for loyalty points
+                const eventId = qrData.replace('IKOOT_EVENT:', '');
+                await handleEventCheckin(eventId);
+            } else if (qrData.startsWith('IKOOT_PROMO:')) {
+                // Handle promo code
+                const promoCode = qrData.replace('IKOOT_PROMO:', '');
+                await handlePromoCode(promoCode);
+            } else {
+                // Try to parse as JSON for backward compatibility
+                try {
+                    const promotionData = JSON.parse(qrData);
+                    showPromotionResult(promotionData);
+                } catch (error) {
+                    showResult(`❌ Invalid QR code format: <code>${qrData}</code>`, 'error');
+                }
+            }
+        }
+        
+        // Handle event check-in for loyalty points
+        async function handleEventCheckin(eventId) {
+            // Check for duplicate (client-side demo)
+            if (scannedEvents.has(eventId)) {
+                showResult(`⚠️ You've already checked in to Event ${eventId}!<br>Current points: ${currentUser.points}`, 'error');
+                return;
+            }
+            
+            try {
+                showResult('Processing check-in...', 'info');
+
+                const response = await fetch(`/api/events/${eventId}/checkin`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_email: currentUser.email
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Success - show loyalty points earned
+                    scannedEvents.add(eventId);
+                    currentUser.points = result.total_points;
+                    updatePointsDisplay();
+                    
+                    showResult(`
+                        <h4>🏆 Check-in Successful!</h4>
+                        <p><strong>🎯 Points Earned:</strong> +${result.points_earned}</p>
+                        <p><strong>⭐ Total Points:</strong> ${result.total_points}</p>
+                        <p><strong>🎪 Event:</strong> ${result.event.title}</p>
+                        <p><strong>📍 Location:</strong> ${result.event.location}</p>
+                    `, 'success');
+                } else {
+                    // Handle specific error cases
+                    if (result.message && result.message.includes('already checked in')) {
+                        scannedEvents.add(eventId); // Track locally too
+                        showResult(`⚠️ ${result.message}<br>Current points: ${result.user_points || 0}`, 'error');
+                    } else {
+                        showResult(`❌ Check-in failed: ${result.message}`, 'error');
+                    }
+                }
+
+            } catch (error) {
+                console.error('Event check-in error:', error);
+                showResult(`❌ Failed to process check-in: ${error.message}`, 'error');
+            }
+        }
+        
+        // Handle promo code
+        async function handlePromoCode(promoCode) {
+            try {
+                const response = await fetch('/api/promos');
+                const data = await response.json();
+
+                if (data.success) {
+                    const promo = data.promos.find(p => p.code === promoCode && p.status === 'active');
+                    if (promo) {
+                        showResult(`
+                            <h4>🎉 Promotion Found!</h4>
+                            <p><strong>Title:</strong> ${promo.title}</p>
+                            <p><strong>Description:</strong> ${promo.description}</p>
+                            <p><strong>Discount:</strong> ${promo.discount_value}${promo.discount_type === 'percentage' ? '%' : ''} OFF</p>
+                            <p><strong>Valid Until:</strong> ${new Date(promo.valid_until).toLocaleDateString()}</p>
+                            <p><strong>Usage:</strong> ${promo.current_usage}/${promo.max_usage} used</p>
+                        `, 'success');
+                    } else {
+                        showResult(`❌ Invalid or expired promo code: <code>${promoCode}</code>`, 'error');
+                    }
+                } else {
+                    showResult('❌ Failed to validate promo code', 'error');
+                }
+            } catch (error) {
+                console.error('Promo code error:', error);
+                showResult(`❌ Failed to process promo code: ${error.message}`, 'error');
+            }
+        }
+        
+        function showPromotionResult(promotion) {
+            showResult(`
+                <h4>🎁 JSON Promotion Detected!</h4>
+                <p><strong>Title:</strong> ${promotion.title || 'Unknown'}</p>
+                <p><strong>Discount:</strong> ${promotion.discount || 'Not specified'}</p>
+                <p><em>This appears to be a legacy JSON format promotion</em></p>
+            `, 'info');
+        }
+        
+        function showResult(html, type = 'info') {
+            const result = document.getElementById('result');
+            const content = document.getElementById('resultContent');
+            
+            content.innerHTML = html;
+            result.className = `result show ${type}`;
+            
+            // Auto-scroll to result
+            result.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function updatePointsDisplay() {
+            document.getElementById('pointsCount').textContent = currentUser.points;
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updatePointsDisplay();
+            showResult('🚀 QR Scanner Debug Tool Ready!<br>Select a preset button or enter custom QR data to test.', 'info');
+        });
+    </script>
+</body>
+</html>

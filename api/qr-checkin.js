@@ -49,38 +49,56 @@ module.exports = async (req, res) => {
             console.log('Events module not accessible, using fallback');
         }
         
-        // Fallback events if none exist
+        // Fallback events if none exist - Updated with real event IDs from event management system
         if (Object.keys(events).length === 0) {
             events = {
-                1: { 
-                    id: 1, 
+                19: { 
+                    id: 19, 
                     title: 'Jakarta Music Festival 2024', 
                     location: 'GBK Senayan, Jakarta',
-                    description: 'Amazing music festival with top artists'
+                    description: 'The biggest music festival in Jakarta featuring international and local artists'
                 },
-                2: { 
-                    id: 2, 
+                20: { 
+                    id: 20, 
                     title: 'Tech Summit Jakarta', 
                     location: 'Jakarta Convention Center',
-                    description: 'Technology conference and innovation showcase'
+                    description: 'Indonesia\'s premier technology conference bringing together industry leaders'
                 },
-                3: { 
-                    id: 3, 
+                21: { 
+                    id: 21, 
                     title: 'Food & Culture Festival', 
                     location: 'Monas Park, Central Jakarta',
-                    description: 'Culinary delights and cultural experiences'
+                    description: 'Celebrate Indonesia\'s rich culinary heritage with dishes from all 34 provinces'
                 },
-                4: { 
-                    id: 4, 
+                22: { 
+                    id: 22, 
+                    title: 'Startup Pitch Competition', 
+                    location: 'Cyber 2 Tower, Jakarta',
+                    description: 'Young entrepreneurs compete for funding and mentorship opportunities'
+                },
+                23: { 
+                    id: 23, 
+                    title: 'Art & Design Exhibition', 
+                    location: 'National Gallery, Jakarta',
+                    description: 'Contemporary art exhibition featuring works by emerging Indonesian artists'
+                },
+                24: { 
+                    id: 24, 
                     title: 'Sports & Wellness Expo', 
                     location: 'Jakarta International Expo',
-                    description: 'Health, fitness and sports equipment expo'
+                    description: 'Health and fitness expo featuring the latest sports equipment'
                 },
-                5: { 
-                    id: 5, 
+                25: { 
+                    id: 25, 
+                    title: 'Photography Workshop', 
+                    location: 'Creative Hub Jakarta',
+                    description: 'Master the art of photography with professional photographers'
+                },
+                26: { 
+                    id: 26, 
                     title: 'Gaming Championship', 
                     location: 'Senayan City Mall',
-                    description: 'Esports tournament with amazing prizes'
+                    description: 'Esports tournament featuring the most popular games'
                 }
             };
         }

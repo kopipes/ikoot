@@ -17,13 +17,16 @@ module.exports = async (req, res) => {
         // For now, we'll generate QR codes on demand since events are in memory
         // In a real system, this would fetch the stored QR code from database
         
-        // Validate event exists (using same logic as qr-checkin)
+        // Validate event exists - Updated with real event IDs from event management system
         const events = {
-            1: { id: 1, title: 'Jakarta Music Festival 2024', location: 'GBK Senayan, Jakarta' },
-            2: { id: 2, title: 'Tech Summit Jakarta', location: 'Jakarta Convention Center' },
-            3: { id: 3, title: 'Food & Culture Festival', location: 'Monas Park, Central Jakarta' },
-            4: { id: 4, title: 'Sports & Wellness Expo', location: 'Jakarta International Expo' },
-            5: { id: 5, title: 'Gaming Championship', location: 'Senayan City Mall' }
+            19: { id: 19, title: 'Jakarta Music Festival 2024', location: 'GBK Senayan, Jakarta' },
+            20: { id: 20, title: 'Tech Summit Jakarta', location: 'Jakarta Convention Center' },
+            21: { id: 21, title: 'Food & Culture Festival', location: 'Monas Park, Central Jakarta' },
+            22: { id: 22, title: 'Startup Pitch Competition', location: 'Cyber 2 Tower, Jakarta' },
+            23: { id: 23, title: 'Art & Design Exhibition', location: 'National Gallery, Jakarta' },
+            24: { id: 24, title: 'Sports & Wellness Expo', location: 'Jakarta International Expo' },
+            25: { id: 25, title: 'Photography Workshop', location: 'Creative Hub Jakarta' },
+            26: { id: 26, title: 'Gaming Championship', location: 'Senayan City Mall' }
         };
         
         const event = events[eventId];

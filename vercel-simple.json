@@ -6,7 +6,7 @@
     },
     {
       "source": "/admin/(.*)",
-      "destination": "/backend/server.js"
+      "destination": "/backend/server.js"  
     },
     {
       "source": "/health",
@@ -16,10 +16,5 @@
       "source": "/(.*)",
       "destination": "/backend/server.js"
     }
-  ],
-  "functions": {
-    "backend/server.js": {
-      "maxDuration": 30
-    }
-  }
+  ]
 }

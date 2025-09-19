@@ -15,7 +15,9 @@ This guide will help you deploy the IKOOT Event Management Platform to Vercel.
 1. Go to [vercel.com](https://vercel.com) and sign in
 2. Click "New Project"
 3. Import your GitHub repository: `https://github.com/kopipes/ikoot-prod`
-4. Vercel will automatically detect the configuration
+4. Vercel will automatically detect the Node.js configuration
+
+   **Note**: The `vercel.json` has been optimized to avoid build/functions conflicts
 
 ### 2. Configure Environment Variables
 
@@ -156,10 +158,16 @@ The database will auto-initialize on first run with:
 - Verify all required environment variables are set
 - Restart deployment after adding new variables
 
+**4. Vercel Configuration Issues**
+- If you see "functions property cannot be used with builds", the `vercel.json` has been fixed
+- Alternative simple config available in `vercel-simple.json` (rename to `vercel.json` if needed)
+- Ensure Node.js version is 18+ in Vercel settings
+
 ### Getting Help
 - Check Vercel documentation
-- Review build logs
+- Review build logs in Vercel dashboard
 - Test locally with `npm run build`
+- Use `vercel-simple.json` as fallback configuration
 
 ## ✅ Deployment Checklist
 

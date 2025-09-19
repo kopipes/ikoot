@@ -174,6 +174,25 @@ app.get('/api/user/profile', async (req, res) => {
     }
 });
 
+// File-based event initialization endpoint (Vercel-compatible)
+app.post('/api/init-events', async (req, res) => {
+    const initEventsHandler = require('./init-events');
+    await initEventsHandler(req, res);
+});
+
+// File-based event check-in endpoint (Vercel-compatible)
+app.post('/api/events/:id/checkin-v2', async (req, res) => {
+    req.query.id = req.params.id; // Pass id as query parameter
+    const checkinHandler = require('./events/[id]/checkin-v2');
+    await checkinHandler(req, res);
+});
+
+// Test deployment endpoint
+app.all('/api/test-deployment', async (req, res) => {
+    const testHandler = require('./test-deployment');
+    await testHandler(req, res);
+});
+
 // 404 handler
 app.use('*', (req, res) => {
     res.status(404).json({

@@ -21,6 +21,15 @@
     },
     "api/events/[id]/qr.js": {
       "maxDuration": 30
+    },
+    "api/qr-checkin.js": {
+      "maxDuration": 30
+    },
+    "api/events.js": {
+      "maxDuration": 30
+    },
+    "api/event-qr.js": {
+      "maxDuration": 30
     }
   },
   "headers": [

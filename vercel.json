@@ -7,12 +7,24 @@
       "destination": "/api/seed-database.js"
     },
     {
+      "source": "/api/seed-db-v2",
+      "destination": "/api/seed-db-v2.js"
+    },
+    {
       "source": "/api/check-events",
       "destination": "/api/check-events.js"
     },
     {
       "source": "/api/test-deployment",
       "destination": "/api/test-deployment.js"
+    },
+    {
+      "source": "/api/init-events",
+      "destination": "/api/init-events.js"
+    },
+    {
+      "source": "/api/events/([^/]+)/checkin-v2",
+      "destination": "/api/events/[id]/checkin-v2.js?id=$1"
     },
     {
       "source": "/api/events/([^/]+)/checkin",

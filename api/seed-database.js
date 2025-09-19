@@ -6,51 +6,66 @@ let runQuery, getAllQuery, getQuery;
 
 // Initialize database connection for Vercel
 function initVercelDatabase() {
-    const Database = require('better-sqlite3');
+    const sqlite3 = require('sqlite3').verbose();
     const path = require('path');
     
-    // In Vercel, the database file should be in /tmp for persistence across requests
-    const dbPath = process.env.VERCEL ? '/tmp/ikoot.db' : path.join(process.cwd(), 'backend', 'database.db');
-    db = new Database(dbPath);
-    
-    console.log('Connected to SQLite database at:', dbPath);
-    
-    // Helper functions
-    runQuery = function(sql, params = []) {
-        return new Promise((resolve, reject) => {
-            try {
-                const stmt = db.prepare(sql);
-                const result = stmt.run(...params);
-                resolve({ id: result.lastInsertRowid, changes: result.changes });
-            } catch (err) {
-                reject(err);
-            }
-        });
-    };
-    
-    getAllQuery = function(sql, params = []) {
-        return new Promise((resolve, reject) => {
-            try {
-                const stmt = db.prepare(sql);
-                const rows = stmt.all(...params);
-                resolve(rows);
-            } catch (err) {
-                reject(err);
-            }
-        });
-    };
-    
-    getQuery = function(sql, params = []) {
-        return new Promise((resolve, reject) => {
-            try {
-                const stmt = db.prepare(sql);
-                const row = stmt.get(...params);
-                resolve(row);
-            } catch (err) {
-                reject(err);
-            }
-        });
-    };
+    return new Promise((resolve, reject) => {
+        try {
+            // In Vercel, the database file should be in /tmp for persistence across requests
+            const dbPath = process.env.VERCEL ? '/tmp/ikoot.db' : path.join(process.cwd(), 'backend', 'database.db');
+            db = new sqlite3.Database(dbPath, (err) => {
+                if (err) {
+                    console.error('Database connection error:', err);
+                    reject(err);
+                    return;
+                }
+                
+                console.log('Connected to SQLite database at:', dbPath);
+                
+                // Helper functions
+                runQuery = function(sql, params = []) {
+                    return new Promise((resolve, reject) => {
+                        db.run(sql, params, function(err) {
+                            if (err) {
+                                reject(err);
+                            } else {
+                                resolve({ id: this.lastID, changes: this.changes });
+                            }
+                        });
+                    });
+                };
+                
+                getAllQuery = function(sql, params = []) {
+                    return new Promise((resolve, reject) => {
+                        db.all(sql, params, (err, rows) => {
+                            if (err) {
+                                reject(err);
+                            } else {
+                                resolve(rows);
+                            }
+                        });
+                    });
+                };
+                
+                getQuery = function(sql, params = []) {
+                    return new Promise((resolve, reject) => {
+                        db.get(sql, params, (err, row) => {
+                            if (err) {
+                                reject(err);
+                            } else {
+                                resolve(row);
+                            }
+                        });
+                    });
+                };
+                
+                resolve();
+            });
+        } catch (error) {
+            console.error('Database initialization error:', error);
+            reject(error);
+        }
+    });
 }
 
 // Function to generate event check-in QR code
@@ -162,8 +177,63 @@ const vercelSampleEvents = [
 
 async function seedVercelDatabase() {
     try {
-        initVercelDatabase();
+        await initVercelDatabase();
         
+        console.log('🏗️  Setting up database schema...');
+        
+        // Create tables if they don't exist
+        await runQuery(`
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                email TEXT UNIQUE NOT NULL,
+                password TEXT NOT NULL,
+                role TEXT DEFAULT 'user',
+                points INTEGER DEFAULT 0,
+                status TEXT DEFAULT 'active',
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        
+        await runQuery(`
+            CREATE TABLE IF NOT EXISTS events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                description TEXT,
+                short_description TEXT,
+                start_date TEXT NOT NULL,
+                end_date TEXT NOT NULL,
+                location TEXT NOT NULL,
+                venue_details TEXT,
+                price REAL DEFAULT 0,
+                max_capacity INTEGER DEFAULT 0,
+                current_bookings INTEGER DEFAULT 0,
+                category TEXT DEFAULT 'General',
+                status TEXT DEFAULT 'upcoming',
+                featured INTEGER DEFAULT 0,
+                image_url TEXT,
+                qr_code TEXT,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        
+        await runQuery(`
+            CREATE TABLE IF NOT EXISTS user_check_ins (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                event_id INTEGER NOT NULL,
+                event_title TEXT NOT NULL,
+                points_earned INTEGER DEFAULT 5,
+                checked_in_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id),
+                FOREIGN KEY (event_id) REFERENCES events(id),
+                UNIQUE(user_id, event_id)
+            )
+        `);
+        
+        console.log('✅ Database schema created');
         console.log('🗑️  Clearing existing event data...');
         
         // Clear existing events and check-ins

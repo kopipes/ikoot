@@ -1,5 +1,70 @@
-// Import the database module from backend
-const { getAllQuery, getQuery } = require('../backend/config/database');
+// Vercel serverless function for checking events
+let db;
+let runQuery, getAllQuery, getQuery;
+
+// Initialize database connection for Vercel
+function initVercelDatabase() {
+    const sqlite3 = require('sqlite3').verbose();
+    const path = require('path');
+    
+    return new Promise((resolve, reject) => {
+        try {
+            // In Vercel, the database file should be in /tmp for persistence across requests
+            const dbPath = process.env.VERCEL ? '/tmp/ikoot.db' : path.join(process.cwd(), 'backend', 'database.db');
+            db = new sqlite3.Database(dbPath, (err) => {
+                if (err) {
+                    console.error('Database connection error:', err);
+                    reject(err);
+                    return;
+                }
+                
+                console.log('Connected to SQLite database at:', dbPath);
+                
+                // Helper functions
+                runQuery = function(sql, params = []) {
+                    return new Promise((resolve, reject) => {
+                        db.run(sql, params, function(err) {
+                            if (err) {
+                                reject(err);
+                            } else {
+                                resolve({ id: this.lastID, changes: this.changes });
+                            }
+                        });
+                    });
+                };
+                
+                getAllQuery = function(sql, params = []) {
+                    return new Promise((resolve, reject) => {
+                        db.all(sql, params, (err, rows) => {
+                            if (err) {
+                                reject(err);
+                            } else {
+                                resolve(rows);
+                            }
+                        });
+                    });
+                };
+                
+                getQuery = function(sql, params = []) {
+                    return new Promise((resolve, reject) => {
+                        db.get(sql, params, (err, row) => {
+                            if (err) {
+                                reject(err);
+                            } else {
+                                resolve(row);
+                            }
+                        });
+                    });
+                };
+                
+                resolve();
+            });
+        } catch (error) {
+            console.error('Database initialization error:', error);
+            reject(error);
+        }
+    });
+}
 
 module.exports = async (req, res) => {
     // Set CORS headers
@@ -19,6 +84,9 @@ module.exports = async (req, res) => {
     }
     
     try {
+        // Initialize database connection
+        await initVercelDatabase();
+        
         console.log('🔍 Checking current events in Vercel database...');
         
         // Get all events with their QR codes

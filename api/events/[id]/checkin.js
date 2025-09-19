@@ -4,58 +4,66 @@ let runQuery, getAllQuery, getQuery;
 
 // Initialize database connection for Vercel
 function initVercelDatabase() {
-    const Database = require('better-sqlite3');
+    const sqlite3 = require('sqlite3').verbose();
     const path = require('path');
     
-    try {
-        // In Vercel, the database file should be in /tmp for persistence across requests
-        const dbPath = process.env.VERCEL ? '/tmp/ikoot.db' : path.join(process.cwd(), 'backend', 'database.db');
-        db = new Database(dbPath);
-        
-        console.log('Connected to SQLite database at:', dbPath);
-        
-        // Helper functions
-        runQuery = function(sql, params = []) {
-            return new Promise((resolve, reject) => {
-                try {
-                    const stmt = db.prepare(sql);
-                    const result = stmt.run(...params);
-                    resolve({ id: result.lastInsertRowid, changes: result.changes });
-                } catch (err) {
+    return new Promise((resolve, reject) => {
+        try {
+            // In Vercel, the database file should be in /tmp for persistence across requests
+            const dbPath = process.env.VERCEL ? '/tmp/ikoot.db' : path.join(process.cwd(), 'backend', 'database.db');
+            db = new sqlite3.Database(dbPath, (err) => {
+                if (err) {
+                    console.error('Database connection error:', err);
                     reject(err);
+                    return;
                 }
+                
+                console.log('Connected to SQLite database at:', dbPath);
+                
+                // Helper functions
+                runQuery = function(sql, params = []) {
+                    return new Promise((resolve, reject) => {
+                        db.run(sql, params, function(err) {
+                            if (err) {
+                                reject(err);
+                            } else {
+                                resolve({ id: this.lastID, changes: this.changes });
+                            }
+                        });
+                    });
+                };
+                
+                getAllQuery = function(sql, params = []) {
+                    return new Promise((resolve, reject) => {
+                        db.all(sql, params, (err, rows) => {
+                            if (err) {
+                                reject(err);
+                            } else {
+                                resolve(rows);
+                            }
+                        });
+                    });
+                };
+                
+                getQuery = function(sql, params = []) {
+                    return new Promise((resolve, reject) => {
+                        db.get(sql, params, (err, row) => {
+                            if (err) {
+                                reject(err);
+                            } else {
+                                resolve(row);
+                            }
+                        });
+                    });
+                };
+                
+                resolve();
             });
-        };
-        
-        getAllQuery = function(sql, params = []) {
-            return new Promise((resolve, reject) => {
-                try {
-                    const stmt = db.prepare(sql);
-                    const rows = stmt.all(...params);
-                    resolve(rows);
-                } catch (err) {
-                    reject(err);
-                }
-            });
-        };
-        
-        getQuery = function(sql, params = []) {
-            return new Promise((resolve, reject) => {
-                try {
-                    const stmt = db.prepare(sql);
-                    const row = stmt.get(...params);
-                    resolve(row);
-                } catch (err) {
-                    reject(err);
-                }
-            });
-        };
-        
-        return true;
-    } catch (error) {
-        console.error('Database initialization error:', error);
-        return false;
-    }
+        } catch (error) {
+            console.error('Database initialization error:', error);
+            reject(error);
+        }
+    });
 }
 
 module.exports = async (req, res) => {
@@ -83,13 +91,7 @@ module.exports = async (req, res) => {
         console.log(`Check-in attempt: Event ${eventId}, User: ${user_email || user_id}`);
         
         // Initialize database
-        const dbInitialized = initVercelDatabase();
-        if (!dbInitialized) {
-            return res.status(500).json({
-                success: false,
-                message: 'Database connection failed'
-            });
-        }
+        await initVercelDatabase();
 
         // Find the event
         const event = await getQuery('SELECT * FROM events WHERE id = ?', [eventId]);

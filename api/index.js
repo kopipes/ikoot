@@ -104,6 +104,15 @@ app.get('/health', (req, res) => {
     });
 });
 
+// Simple debug endpoint
+app.get('/api/debug', (req, res) => {
+    res.json({
+        message: 'Debug endpoint working!',
+        timestamp: new Date().toISOString(),
+        routes_registered: true
+    });
+});
+
 // Admin stats endpoint
 app.get('/api/admin/stats', async (req, res) => {
     try {

@@ -174,23 +174,241 @@ app.get('/api/user/profile', async (req, res) => {
     }
 });
 
-// File-based event initialization endpoint (Vercel-compatible)
+// Test deployment endpoint (embedded)
+app.all('/api/test-deployment', (req, res) => {
+    res.status(200).json({
+        success: true,
+        message: 'Deployment test successful! 🎉',
+        timestamp: new Date().toISOString(),
+        method: req.method,
+        environment: 'Vercel Serverless (Express)',
+        node_version: process.version,
+        available_modules: {
+            fs: typeof require('fs') !== 'undefined',
+            path: typeof require('path') !== 'undefined',
+            crypto: typeof require('crypto') !== 'undefined'
+        }
+    });
+});
+
+// File-based event initialization endpoint (Vercel-compatible, embedded)
 app.post('/api/init-events', async (req, res) => {
-    const initEventsHandler = require('./init-events');
-    await initEventsHandler(req, res);
+    try {
+        const fs = require('fs').promises;
+        
+        // Event data to seed
+        const eventData = [
+            {
+                id: 1,
+                title: "Jakarta Music Festival 2024",
+                location: "GBK Senayan, Jakarta",
+                status: "live",
+                qr_code: "IKOOT_EVENT:1"
+            },
+            {
+                id: 2,
+                title: "Tech Summit Jakarta",
+                location: "Jakarta Convention Center",
+                status: "live",
+                qr_code: "IKOOT_EVENT:2"
+            },
+            {
+                id: 3,
+                title: "Food & Culture Festival",
+                location: "Monas Park, Central Jakarta",
+                status: "upcoming",
+                qr_code: "IKOOT_EVENT:3"
+            },
+            {
+                id: 4,
+                title: "Sports & Wellness Expo",
+                location: "Jakarta International Expo",
+                status: "live",
+                qr_code: "IKOOT_EVENT:4"
+            },
+            {
+                id: 5,
+                title: "Gaming Championship",
+                location: "Senayan City Mall",
+                status: "upcoming",
+                qr_code: "IKOOT_EVENT:5"
+            }
+        ];
+        
+        // Store in /tmp for serverless
+        await fs.writeFile('/tmp/events.json', JSON.stringify(eventData, null, 2));
+        await fs.writeFile('/tmp/users.json', JSON.stringify([], null, 2));
+        await fs.writeFile('/tmp/checkins.json', JSON.stringify([], null, 2));
+        
+        console.log('✅ Event data initialized in /tmp');
+        
+        res.status(200).json({
+            success: true,
+            message: 'Event data initialized successfully! 🎉',
+            storage: 'File-based storage in /tmp (Vercel compatible)',
+            events: eventData.map(event => ({
+                id: event.id,
+                title: event.title,
+                status: event.status,
+                qr_format: `IKOOT_EVENT:${event.id}`,
+                location: event.location
+            })),
+            testInstructions: {
+                qrCodes: eventData.map(event => ({
+                    eventId: event.id,
+                    title: event.title,
+                    qrData: `IKOOT_EVENT:${event.id}`,
+                    testUrl: `Generate QR code with data: IKOOT_EVENT:${event.id}`,
+                    checkInUrl: `/api/events/${event.id}/checkin-v2`
+                }))
+            },
+            nextSteps: [
+                "1. Generate QR codes using the formats above",
+                "2. Test QR scanner in the IKOOT app", 
+                "3. Scan QR codes to test event check-in",
+                "4. Verify loyalty points are awarded"
+            ]
+        });
+        
+    } catch (error) {
+        console.error('❌ Init events error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to initialize event data',
+            error: error.message
+        });
+    }
 });
 
-// File-based event check-in endpoint (Vercel-compatible)
+// File-based event check-in endpoint (Vercel-compatible, embedded)
 app.post('/api/events/:id/checkin-v2', async (req, res) => {
-    req.query.id = req.params.id; // Pass id as query parameter
-    const checkinHandler = require('./events/[id]/checkin-v2');
-    await checkinHandler(req, res);
-});
+    try {
+        const fs = require('fs').promises;
+        const bcrypt = require('bcryptjs');
+        const eventId = parseInt(req.params.id);
+        const { user_email } = req.body;
 
-// Test deployment endpoint
-app.all('/api/test-deployment', async (req, res) => {
-    const testHandler = require('./test-deployment');
-    await testHandler(req, res);
+        console.log(`🎯 Check-in attempt: Event ${eventId}, User: ${user_email}`);
+        
+        if (!user_email) {
+            return res.status(400).json({
+                success: false,
+                message: 'User email is required'
+            });
+        }
+        
+        // Read events data
+        let events, users, checkins;
+        try {
+            events = JSON.parse(await fs.readFile('/tmp/events.json', 'utf8'));
+            users = JSON.parse(await fs.readFile('/tmp/users.json', 'utf8'));
+            checkins = JSON.parse(await fs.readFile('/tmp/checkins.json', 'utf8'));
+        } catch (error) {
+            return res.status(500).json({
+                success: false,
+                message: 'Event data not initialized. Please call /api/init-events first.'
+            });
+        }
+        
+        // Find the event
+        const event = events.find(e => e.id === eventId);
+        if (!event) {
+            console.log(`❌ Event ${eventId} not found`);
+            return res.status(404).json({
+                success: false,
+                message: 'Event not found'
+            });
+        }
+        
+        console.log(`✅ Found event: ${event.title}`);
+        
+        // Find or create user
+        let user = users.find(u => u.email === user_email);
+        if (!user) {
+            const hashedPassword = await bcrypt.hash('temp123', 10);
+            user = {
+                id: users.length + 1,
+                name: user_email.split('@')[0],
+                email: user_email,
+                password: hashedPassword,
+                role: 'user',
+                points: 0,
+                status: 'active',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
+            
+            users.push(user);
+            await fs.writeFile('/tmp/users.json', JSON.stringify(users, null, 2));
+            console.log(`✅ Created new user: ${user_email}`);
+        }
+        
+        // Check if user already checked in to this event
+        if (checkins.some(c => c.user_id === user.id && c.event_id === eventId)) {
+            console.log(`⚠️ User ${user.email} already checked in to event ${eventId}`);
+            return res.status(400).json({
+                success: false,
+                message: 'You have already checked in to this event',
+                user_points: user.points
+            });
+        }
+        
+        // Award points (5 points per event check-in)
+        const pointsEarned = 5;
+        
+        // Create check-in record
+        const checkIn = {
+            id: checkins.length + 1,
+            user_id: user.id,
+            event_id: eventId,
+            event_title: event.title,
+            points_earned: pointsEarned,
+            checked_in_at: new Date().toISOString()
+        };
+        
+        checkins.push(checkIn);
+        await fs.writeFile('/tmp/checkins.json', JSON.stringify(checkins, null, 2));
+        
+        // Update user points
+        const userIndex = users.findIndex(u => u.id === user.id);
+        users[userIndex].points = (users[userIndex].points || 0) + pointsEarned;
+        users[userIndex].updated_at = new Date().toISOString();
+        await fs.writeFile('/tmp/users.json', JSON.stringify(users, null, 2));
+        
+        const updatedUser = users[userIndex];
+        
+        console.log(`🎉 Check-in successful: ${user.email} got ${pointsEarned} points for ${event.title}`);
+        
+        res.json({
+            success: true,
+            message: `Check-in successful! You earned ${pointsEarned} points!`,
+            points_earned: pointsEarned,
+            total_points: updatedUser.points,
+            event: {
+                id: event.id,
+                title: event.title,
+                location: event.location
+            },
+            user: {
+                id: updatedUser.id,
+                name: updatedUser.name,
+                email: updatedUser.email,
+                points: updatedUser.points
+            },
+            storage_info: {
+                method: 'File-based storage (/tmp)',
+                vercel_compatible: true
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ Check-in error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Check-in failed',
+            error: error.message
+        });
+    }
 });
 
 // 404 handler

@@ -1,5 +1,5 @@
 {
-  "buildCommand": "echo 'Cache bust deployment - 2025-09-19T05:58:45Z'",
+  "buildCommand": "echo 'Cache bust deployment - 2025-09-19T06:56:55Z'",
   "functions": {
     "api/index.js": {
       "maxDuration": 30

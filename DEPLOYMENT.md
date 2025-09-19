@@ -14,7 +14,7 @@ This guide will help you deploy the IKOOT Event Management Platform to Vercel.
 
 1. Go to [vercel.com](https://vercel.com) and sign in
 2. Click "New Project"
-3. Import your GitHub repository: `https://github.com/kopipes/ikoot`
+3. Import your GitHub repository: `https://github.com/kopipes/ikoot-prod`
 4. Vercel will automatically detect the configuration
 
 ### 2. Configure Environment Variables

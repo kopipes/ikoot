@@ -1,8 +1,10 @@
-# 🎉 IKOOT Event Management System
+# 🎉 IKOOT Event Management System - Production
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/kopipes/ikoot)
-[![Production Ready](https://img.shields.io/badge/Production-Ready-green.svg)](https://github.com/kopipes/ikoot)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/kopipes/ikoot-prod)
+[![Production Repository](https://img.shields.io/badge/Production-Repository-blue.svg)](https://github.com/kopipes/ikoot-prod)
+[![Production Ready](https://img.shields.io/badge/Production-Ready-green.svg)](https://github.com/kopipes/ikoot-prod)
 [![Node.js Version](https://img.shields.io/badge/Node.js-18%2B-green.svg)](https://nodejs.org/)
+[![Vercel Compatible](https://img.shields.io/badge/Vercel-Compatible-black.svg)](https://vercel.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A complete, production-ready event management platform built with modern web technologies. IKOOT provides event organizers with powerful tools to manage events, users, and customer loyalty programs.
@@ -89,7 +91,7 @@ A complete, production-ready event management platform built with modern web tec
 ### 🌐 Vercel Deployment (Production Ready)
 
 #### Quick Deploy
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/kopipes/ikoot)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/kopipes/ikoot-prod)
 
 #### Manual Deployment
 1. **Fork/Clone this repository**

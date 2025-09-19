@@ -52,7 +52,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/kopipes/ikoot.git"
+    "url": "https://github.com/kopipes/ikoot-prod.git"
   },
-  "homepage": "https://github.com/kopipes/ikoot#readme"
+  "homepage": "https://github.com/kopipes/ikoot-prod#readme"
 }

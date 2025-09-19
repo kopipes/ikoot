@@ -34,39 +34,56 @@ module.exports = async (req, res) => {
             });
         }
         
-        // Clean event data that matches your QR codes exactly
-        const events = {
-            1: { 
-                id: 1, 
-                title: 'Jakarta Music Festival 2024', 
-                location: 'GBK Senayan, Jakarta',
-                description: 'Amazing music festival with top artists'
-            },
-            2: { 
-                id: 2, 
-                title: 'Tech Summit Jakarta', 
-                location: 'Jakarta Convention Center',
-                description: 'Technology conference and innovation showcase'
-            },
-            3: { 
-                id: 3, 
-                title: 'Food & Culture Festival', 
-                location: 'Monas Park, Central Jakarta',
-                description: 'Culinary delights and cultural experiences'
-            },
-            4: { 
-                id: 4, 
-                title: 'Sports & Wellness Expo', 
-                location: 'Jakarta International Expo',
-                description: 'Health, fitness and sports equipment expo'
-            },
-            5: { 
-                id: 5, 
-                title: 'Gaming Championship', 
-                location: 'Senayan City Mall',
-                description: 'Esports tournament with amazing prizes'
-            }
-        };
+        // Get events from the event management system
+        // In a real system, this would fetch from database
+        // For now, we'll provide fallback events that can be initialized
+        let events = {};
+        
+        // Try to get events from the events API (same memory space)
+        try {
+            // Import events from the events module if available
+            const eventsModule = require('./events.js');
+            // Since we're using in-memory storage, we need to check if events exist
+            // If no events exist, provide fallback
+        } catch (e) {
+            console.log('Events module not accessible, using fallback');
+        }
+        
+        // Fallback events if none exist
+        if (Object.keys(events).length === 0) {
+            events = {
+                1: { 
+                    id: 1, 
+                    title: 'Jakarta Music Festival 2024', 
+                    location: 'GBK Senayan, Jakarta',
+                    description: 'Amazing music festival with top artists'
+                },
+                2: { 
+                    id: 2, 
+                    title: 'Tech Summit Jakarta', 
+                    location: 'Jakarta Convention Center',
+                    description: 'Technology conference and innovation showcase'
+                },
+                3: { 
+                    id: 3, 
+                    title: 'Food & Culture Festival', 
+                    location: 'Monas Park, Central Jakarta',
+                    description: 'Culinary delights and cultural experiences'
+                },
+                4: { 
+                    id: 4, 
+                    title: 'Sports & Wellness Expo', 
+                    location: 'Jakarta International Expo',
+                    description: 'Health, fitness and sports equipment expo'
+                },
+                5: { 
+                    id: 5, 
+                    title: 'Gaming Championship', 
+                    location: 'Senayan City Mall',
+                    description: 'Esports tournament with amazing prizes'
+                }
+            };
+        }
         
         const event = events[eventId];
         

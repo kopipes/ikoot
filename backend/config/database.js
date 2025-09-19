@@ -101,15 +101,18 @@ async function createTables() {
             code VARCHAR(50) UNIQUE NOT NULL,
             title VARCHAR(255) NOT NULL,
             description TEXT,
+            promo_type VARCHAR(20) DEFAULT 'discount',
             discount_type VARCHAR(20) DEFAULT 'percentage',
-            discount_value DECIMAL(10,2) NOT NULL,
+            discount_value DECIMAL(10,2),
+            custom_value TEXT,
             min_purchase DECIMAL(10,2) DEFAULT 0,
-            max_usage INTEGER DEFAULT 1,
+            max_usage INTEGER,
             current_usage INTEGER DEFAULT 0,
             valid_from DATETIME,
             valid_until DATETIME,
             applicable_events JSON,
             status VARCHAR(20) DEFAULT 'active',
+            qr_code TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )`,
@@ -425,11 +428,102 @@ async function insertSampleData() {
     }
 }
 
+// Migrate database to add missing columns
+async function migrateDatabase() {
+    try {
+        console.log('🔄 Running database migration...');
+        
+        // Check if promos table exists and has the required columns
+        const tableInfo = await getAllQuery("PRAGMA table_info(promos)").catch(() => []);
+        const columnNames = tableInfo.map(col => col.name);
+        
+        // Check if discount_value has NOT NULL constraint
+        const discountValueColumn = tableInfo.find(col => col.name === 'discount_value');
+        const needsTableRecreation = discountValueColumn && discountValueColumn.notnull === 1;
+        
+        if (needsTableRecreation) {
+            console.log('🔄 Recreating promos table to fix constraints...');
+            
+            // Create backup table
+            await runQuery('DROP TABLE IF EXISTS promos_backup');
+            await runQuery('CREATE TABLE promos_backup AS SELECT * FROM promos');
+            
+            // Drop original table
+            await runQuery('DROP TABLE promos');
+            
+            // Recreate with correct schema
+            await runQuery(`CREATE TABLE IF NOT EXISTS promos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                code VARCHAR(50) UNIQUE NOT NULL,
+                title VARCHAR(255) NOT NULL,
+                description TEXT,
+                promo_type VARCHAR(20) DEFAULT 'discount',
+                discount_type VARCHAR(20) DEFAULT 'percentage',
+                discount_value DECIMAL(10,2),
+                custom_value TEXT,
+                min_purchase DECIMAL(10,2) DEFAULT 0,
+                max_usage INTEGER,
+                current_usage INTEGER DEFAULT 0,
+                valid_from DATETIME,
+                valid_until DATETIME,
+                applicable_events JSON,
+                status VARCHAR(20) DEFAULT 'active',
+                qr_code TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )`);
+            
+            // Restore existing data
+            const backupData = await getAllQuery('SELECT * FROM promos_backup');
+            for (const row of backupData) {
+                // Build insert statement dynamically based on available columns
+                const columns = Object.keys(row).filter(key => key !== 'id');
+                const placeholders = columns.map(() => '?').join(', ');
+                const values = columns.map(col => row[col]);
+                
+                await runQuery(`
+                    INSERT INTO promos (${columns.join(', ')}) 
+                    VALUES (${placeholders})
+                `, values);
+            }
+            
+            // Clean up backup
+            await runQuery('DROP TABLE promos_backup');
+            console.log('✅ Table recreation completed');
+        } else {
+            // Just add missing columns if table structure is OK
+            const requiredColumns = [
+                { name: 'promo_type', type: 'VARCHAR(20)', default: "'discount'" },
+                { name: 'custom_value', type: 'TEXT', default: null },
+                { name: 'qr_code', type: 'TEXT', default: null }
+            ];
+            
+            for (const column of requiredColumns) {
+                if (!columnNames.includes(column.name)) {
+                    console.log(`Adding missing column: ${column.name}`);
+                    let sql = `ALTER TABLE promos ADD COLUMN ${column.name} ${column.type}`;
+                    if (column.default !== null) {
+                        sql += ` DEFAULT ${column.default}`;
+                    }
+                    await runQuery(sql);
+                    console.log(`✅ Added column: ${column.name}`);
+                }
+            }
+        }
+        
+        console.log('✅ Database migration completed');
+    } catch (error) {
+        console.error('❌ Database migration error:', error);
+        // Don't throw error, migration failures shouldn't stop the app
+    }
+}
+
 // Main initialization function
 async function initDatabase() {
     try {
         await initDB();
         await createTables();
+        await migrateDatabase(); // Run migration after table creation
         await insertSampleData();
         console.log('✅ Database initialization complete');
     } catch (error) {

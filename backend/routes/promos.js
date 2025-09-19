@@ -96,8 +96,8 @@ router.post('/', async (req, res) => {
 async function createPromo(req, res) {
     try {
         const {
-            code, title, description, discount_type, discount_value, 
-            min_purchase, max_usage, valid_from, valid_until, applicable_events
+            code, title, description, promo_type, discount_type, discount_value, 
+            custom_value, min_purchase, max_usage, valid_from, valid_until, applicable_events
         } = req.body;
         
         // Check if code already exists
@@ -115,12 +115,13 @@ async function createPromo(req, res) {
         // Insert promo
         const result = await runQuery(`
             INSERT INTO promos (
-                code, title, description, discount_type, discount_value,
-                min_purchase, max_usage, current_usage, valid_from, valid_until,
+                code, title, description, promo_type, discount_type, discount_value,
+                custom_value, min_purchase, max_usage, current_usage, valid_from, valid_until,
                 applicable_events, status, qr_code
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, 'active', ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, 'active', ?)
         `, [
-            code.toUpperCase(), title, description, discount_type, discount_value,
+            code.toUpperCase(), title, description, promo_type || 'discount', 
+            discount_type, discount_value, custom_value,
             min_purchase || 0, max_usage || null, valid_from, valid_until,
             applicable_events ? JSON.stringify(applicable_events) : null, qrCodeDataUrl
         ]);
@@ -163,8 +164,8 @@ async function updatePromo(req, res) {
     try {
         const promoId = parseInt(req.params.id);
         const {
-            code, title, description, discount_type, discount_value,
-            min_purchase, max_usage, valid_from, valid_until, status, applicable_events
+            code, title, description, promo_type, discount_type, discount_value,
+            custom_value, min_purchase, max_usage, valid_from, valid_until, status, applicable_events
         } = req.body;
         
         // Check if promo exists
@@ -201,8 +202,10 @@ async function updatePromo(req, res) {
             SET code = COALESCE(?, code),
                 title = COALESCE(?, title),
                 description = COALESCE(?, description),
+                promo_type = COALESCE(?, promo_type),
                 discount_type = COALESCE(?, discount_type),
                 discount_value = COALESCE(?, discount_value),
+                custom_value = COALESCE(?, custom_value),
                 min_purchase = COALESCE(?, min_purchase),
                 max_usage = COALESCE(?, max_usage),
                 valid_from = COALESCE(?, valid_from),
@@ -213,8 +216,8 @@ async function updatePromo(req, res) {
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
         `, [
-            updatedCode, title, description, discount_type, discount_value,
-            min_purchase, max_usage, valid_from, valid_until, status,
+            updatedCode, title, description, promo_type, discount_type, discount_value,
+            custom_value, min_purchase, max_usage, valid_from, valid_until, status,
             applicable_events ? JSON.stringify(applicable_events) : null,
             qrCodeDataUrl, promoId
         ]);

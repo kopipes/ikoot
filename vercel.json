@@ -1,12 +1,5 @@
 {
-  "buildCommand": "echo 'Cache bust deployment - 2025-01-19T05:26:16Z'",
-  "outputDirectory": ".",
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/api/index.js"
-    }
-  ],
+  "buildCommand": "echo 'Cache bust deployment - 2025-09-19T05:58:45Z'",
   "functions": {
     "api/index.js": {
       "maxDuration": 30
@@ -24,6 +17,9 @@
       "maxDuration": 30
     },
     "api/check-events.js": {
+      "maxDuration": 30
+    },
+    "api/events/[id]/qr.js": {
       "maxDuration": 30
     }
   },

@@ -286,46 +286,22 @@ class QRScanner {
                 return;
             }
 
-            // Attempt check-in with fallback to simple endpoint
-            let response;
-            let result;
+            // Clean QR check-in using new API
+            console.log(`Attempting QR check-in: Event ${eventId}, User: ${currentUser.email}`);
             
-            try {
-                // Try regular check-in endpoint first
-                response = await fetch(`/api/events/${eventId}/checkin`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        user_email: currentUser.email
-                    })
-                });
-                
-                result = await response.json();
-                
-                // If event not found, try simple check-in endpoint
-                if (!response.ok && result.message && result.message.includes('Event not found')) {
-                    console.log('Regular check-in failed, trying simple check-in API...');
-                    
-                    response = await fetch(`/api/simple-checkin`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            eventId: eventId,
-                            user_email: currentUser.email
-                        })
-                    });
-                    
-                    result = await response.json();
-                }
-                
-            } catch (fetchError) {
-                console.error('Check-in fetch error:', fetchError);
-                throw fetchError;
-            }
+            const response = await fetch('/api/qr-checkin', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    eventId: parseInt(eventId),
+                    user_email: currentUser.email
+                })
+            });
+            
+            const result = await response.json();
+            console.log('QR check-in response:', result);
             
             if (response.ok) {
                 this.showCheckinSuccessResult(result);

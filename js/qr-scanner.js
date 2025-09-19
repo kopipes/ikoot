@@ -200,7 +200,7 @@ class QRScanner {
             // Simulate finding QR codes (both promo and event check-in)
             const qrTypes = [
                 { type: 'IKOOT_PROMO', codes: ['IKOOT2024', 'WEEKEND50', 'FOODIE10'] }, // Orange QR - Working promo codes
-                { type: 'IKOOT_EVENT', codes: ['4', '5', '6'] } // Green QR - Event IDs that exist in database
+                { type: 'IKOOT_EVENT', codes: ['1', '2', '3', '4', '5'] } // Green QR - Event IDs for testing
             ];
             
             const randomType = qrTypes[Math.floor(Math.random() * qrTypes.length)];

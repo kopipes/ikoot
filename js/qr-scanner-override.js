@@ -1,17 +1,19 @@
 // Temporary QR scanner override to test complete flow with simulated success
 // This bypasses the API caching issue by simulating successful responses
 
-// Override the handleEventCheckinQRCode function
-if (typeof qrScannerInstance !== 'undefined' && qrScannerInstance) {
-    
-    // Store the original function
-    qrScannerInstance.originalHandleEventCheckinQRCode = qrScannerInstance.handleEventCheckinQRCode;
-    
-    // Override with test version
-    qrScannerInstance.handleEventCheckinQRCode = async function(eventId) {
-        console.log('🎯 QR SCANNER OVERRIDE ACTIVE - Testing event ID:', eventId);
+console.log('🔄 QR Scanner Override Script Loading...');
+
+// Function to install the override
+function installQROverride() {
+    if (typeof qrScannerInstance !== 'undefined' && qrScannerInstance) {
+        // Store the original function
+        qrScannerInstance.originalHandleEventCheckinQRCode = qrScannerInstance.handleEventCheckinQRCode;
         
-        this.stopScanning();
+        // Override with test version
+        qrScannerInstance.handleEventCheckinQRCode = async function(eventId) {
+            console.log('🎯 QR SCANNER OVERRIDE ACTIVE - Testing event ID:', eventId);
+            
+            this.stopScanning();
         
         if (!currentUser) {
             // Show login prompt for event check-in
@@ -89,16 +91,51 @@ if (typeof qrScannerInstance !== 'undefined' && qrScannerInstance) {
         this.showCheckinSuccessResult(mockResult);
         
         // Update user's points in memory
-        if (currentUser) {
-            currentUser.points = mockResult.total_points;
-        }
-    };
-    
-    console.log('🔄 QR Scanner override installed - will simulate successful check-ins');
-    
-} else {
-    console.log('⚠️ QR Scanner instance not found - override not installed');
+            if (currentUser) {
+                currentUser.points = mockResult.total_points;
+            }
+        };
+        
+        console.log('🔄 QR Scanner override installed - will simulate successful check-ins');
+        return true;
+        
+    } else {
+        console.log('⚠️ QR Scanner instance not found - override not installed');
+        return false;
+    }
 }
+
+// Try to install override immediately
+installQROverride();
+
+// Also try to install when QR scanner is opened
+const originalOpenModal = window.openModal;
+if (originalOpenModal) {
+    window.openModal = function(modalId) {
+        const result = originalOpenModal.apply(this, arguments);
+        if (modalId === 'qrModal') {
+            // Give the QR scanner a moment to initialize
+            setTimeout(() => {
+                installQROverride();
+            }, 500);
+        }
+        return result;
+    };
+}
+
+// Watch for qrScannerInstance to be created
+let watchAttempts = 0;
+const watchForScanner = setInterval(() => {
+    if (installQROverride()) {
+        clearInterval(watchForScanner);
+    } else {
+        watchAttempts++;
+        if (watchAttempts > 20) { // Stop trying after 10 seconds
+            clearInterval(watchForScanner);
+            console.log('⚠️ Stopped watching for QR scanner instance');
+        }
+    }
+}, 500);
 
 // Also add a notice to the page
 document.addEventListener('DOMContentLoaded', function() {

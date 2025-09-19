@@ -306,14 +306,15 @@ class QRScanner {
                 
                 // If event not found, try simple check-in endpoint
                 if (!response.ok && result.message && result.message.includes('Event not found')) {
-                    console.log('Regular check-in failed, trying simple endpoint...');
+                    console.log('Regular check-in failed, trying simple check-in API...');
                     
-                    response = await fetch(`/api/events/${eventId}/checkin-simple`, {
+                    response = await fetch(`/api/simple-checkin`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
+                            eventId: eventId,
                             user_email: currentUser.email
                         })
                     });

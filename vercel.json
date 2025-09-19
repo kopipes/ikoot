@@ -30,6 +30,9 @@
     },
     "api/event-qr.js": {
       "maxDuration": 30
+    },
+    "api/events/[id]/checkin.js": {
+      "maxDuration": 30
     }
   },
   "headers": [

@@ -1,5 +1,5 @@
 {
-  "buildCommand": "echo 'No build required - Updated for sqlite3'",
+  "buildCommand": "echo 'Cache bust deployment - 2025-01-19T05:26:16Z'",
   "outputDirectory": ".",
   "rewrites": [
     {
@@ -12,6 +12,12 @@
       "maxDuration": 30
     },
     "api/events/*/checkin.js": {
+      "maxDuration": 30
+    },
+    "api/events/*/checkin-v3.js": {
+      "maxDuration": 30
+    },
+    "api/events/*/test-checkin.js": {
       "maxDuration": 30
     },
     "api/seed-database.js": {

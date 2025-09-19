@@ -1,37 +1,6 @@
 {
-  "buildCommand": "echo 'Cache bust deployment - 2025-09-19T07:26:05Z - QR fix ready'",
   "functions": {
-    "api/index.js": {
-      "maxDuration": 30
-    },
-    "api/events/*/checkin.js": {
-      "maxDuration": 30
-    },
-    "api/events/*/checkin-v3.js": {
-      "maxDuration": 30
-    },
-    "api/events/*/test-checkin.js": {
-      "maxDuration": 30
-    },
-    "api/seed-database.js": {
-      "maxDuration": 30
-    },
-    "api/check-events.js": {
-      "maxDuration": 30
-    },
-    "api/events/[id]/qr.js": {
-      "maxDuration": 30
-    },
-    "api/qr-checkin.js": {
-      "maxDuration": 30
-    },
-    "api/events.js": {
-      "maxDuration": 30
-    },
-    "api/event-qr.js": {
-      "maxDuration": 30
-    },
-    "api/events/[id]/checkin.js": {
+    "api/**/*.js": {
       "maxDuration": 30
     }
   },

@@ -7,8 +7,7 @@
     "start": "node backend/server.js",
     "dev": "cd backend && npm run dev",
     "build": "echo 'Build completed'",
-    "test": "cd backend && npm test",
-    "vercel-build": "cd backend && npm install"
+    "test": "cd backend && npm test"
   },
   "keywords": [
     "event-management",

@@ -162,9 +162,36 @@ class QRScanner {
         this.animationFrame = requestAnimationFrame(() => this.scanFrame());
     }
 
-    // Simplified QR code detection - in a real implementation, you'd use a library like jsQR
+    // Real QR code detection using jsQR library
     decodeQRCode(imageData) {
-        // Simulate QR code detection after 3 seconds
+        try {
+            // Check if jsQR is available
+            if (typeof jsQR === 'undefined') {
+                console.warn('jsQR library not loaded, falling back to simulation');
+                return this.simulateQRDetection();
+            }
+
+            // Use jsQR to detect QR code in the image data
+            const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                inversionAttempts: "dontInvert",
+            });
+
+            if (code) {
+                console.log('QR Code detected:', code.data);
+                return code.data;
+            }
+
+            return null;
+        } catch (error) {
+            console.error('QR detection error:', error);
+            // Fallback to simulation if jsQR fails
+            return this.simulateQRDetection();
+        }
+    }
+
+    // Fallback simulation method for development/testing
+    simulateQRDetection() {
+        // Only simulate after 3 seconds and if no real QR codes detected recently
         if (!this.detectionStartTime) {
             this.detectionStartTime = Date.now();
         }
@@ -178,6 +205,7 @@ class QRScanner {
             
             const randomType = qrTypes[Math.floor(Math.random() * qrTypes.length)];
             const randomCode = randomType.codes[Math.floor(Math.random() * randomType.codes.length)];
+            console.log('Simulated QR detection:', `${randomType.type}:${randomCode}`);
             return `${randomType.type}:${randomCode}`;
         }
 

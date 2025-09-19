@@ -465,7 +465,14 @@ router.get('/:id/qr', async (req, res) => {
         console.log(`EVENT QR REQUEST: Event ID ${eventId}`);
         const event = await getQuery('SELECT qr_code FROM events WHERE id = ?', [eventId]);
 
-        if (!event || !event.qr_code) {
+        if (!event) {
+            return res.status(404).json({
+                success: false,
+                message: 'Event not found'
+            });
+        }
+
+        if (!event.qr_code) {
             // Generate QR code if it doesn't exist
             const qrCode = await generateEventQRCode(eventId);
             await runQuery('UPDATE events SET qr_code = ? WHERE id = ?', [qrCode, eventId]);

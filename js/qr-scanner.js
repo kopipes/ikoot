@@ -286,18 +286,45 @@ class QRScanner {
                 return;
             }
 
-            // Attempt check-in
-            const response = await fetch(`/api/events/${eventId}/checkin`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    user_email: currentUser.email
-                })
-            });
-
-            const result = await response.json();
+            // Attempt check-in with fallback to simple endpoint
+            let response;
+            let result;
+            
+            try {
+                // Try regular check-in endpoint first
+                response = await fetch(`/api/events/${eventId}/checkin`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_email: currentUser.email
+                    })
+                });
+                
+                result = await response.json();
+                
+                // If event not found, try simple check-in endpoint
+                if (!response.ok && result.message && result.message.includes('Event not found')) {
+                    console.log('Regular check-in failed, trying simple endpoint...');
+                    
+                    response = await fetch(`/api/events/${eventId}/checkin-simple`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            user_email: currentUser.email
+                        })
+                    });
+                    
+                    result = await response.json();
+                }
+                
+            } catch (fetchError) {
+                console.error('Check-in fetch error:', fetchError);
+                throw fetchError;
+            }
             
             if (response.ok) {
                 this.showCheckinSuccessResult(result);

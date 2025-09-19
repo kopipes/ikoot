@@ -61,6 +61,7 @@ function createDiagnosticOverlay() {
         <div><strong>QR Scanner Diagnostics</strong></div>
         <div id="diagnostic-content">Initializing...</div>
         <button onclick="window.qrDiagnostic.clear()" style="margin-top: 5px; padding: 2px 5px;">Clear</button>
+        <button onclick="window.qrDiagnostic.testQR()" style="margin-top: 5px; padding: 2px 5px; margin-left: 5px;">Test QR</button>
     `;
     document.body.appendChild(overlay);
     
@@ -87,6 +88,20 @@ window.qrDiagnostic.clear = function() {
     qrLog('Diagnostics cleared');
 };
 
+// Test QR function
+window.qrDiagnostic.testQR = function() {
+    const testData = 'IKOOT_EVENT:1';
+    qrLog('Testing QR Format', testData);
+    
+    // Directly test the handleQRCodeDetected function
+    if (typeof qrScannerInstance !== 'undefined' && qrScannerInstance) {
+        qrLog('Simulating QR detection with test data');
+        qrScannerInstance.handleQRCodeDetected(testData);
+    } else {
+        alert('QR Scanner not found. Please open the QR scanner first.');
+    }
+};
+
 // Enhanced QR override with diagnostics
 function enhancedQROverride() {
     qrLog('Attempting to install QR override');
@@ -98,16 +113,45 @@ function enhancedQROverride() {
         const originalHandleQRCodeDetected = qrScannerInstance.handleQRCodeDetected;
         const originalHandleEventCheckin = qrScannerInstance.handleEventCheckinQRCode;
         
-        // Override QR detection to log all codes
+        // Override QR detection to log all codes with detailed analysis
         qrScannerInstance.handleQRCodeDetected = async function(qrCodeData) {
-            qrLog('QR Code Detected', qrCodeData);
-            window.qrDiagnostic.qrCodesDetected.push({
-                timestamp: Date.now(),
-                data: qrCodeData
+            qrLog('QR Code Raw Data', qrCodeData);
+            qrLog('QR Code Analysis', {
+                data: qrCodeData,
+                length: qrCodeData?.length,
+                startsWithIKOOT_EVENT: qrCodeData?.startsWith('IKOOT_EVENT:'),
+                startsWithIKOOT_PROMO: qrCodeData?.startsWith('IKOOT_PROMO:'),
+                trimmed: qrCodeData?.trim(),
+                type: typeof qrCodeData
             });
             
-            // Call original function
-            return originalHandleQRCodeDetected.call(this, qrCodeData);
+            window.qrDiagnostic.qrCodesDetected.push({
+                timestamp: Date.now(),
+                data: qrCodeData,
+                analysis: {
+                    startsWithIKOOT_EVENT: qrCodeData?.startsWith('IKOOT_EVENT:'),
+                    startsWithIKOOT_PROMO: qrCodeData?.startsWith('IKOOT_PROMO:')
+                }
+            });
+            
+            // Show detailed alert for debugging
+            alert(`QR Detected: "${qrCodeData}"\nLength: ${qrCodeData?.length}\nStarts with IKOOT_EVENT: ${qrCodeData?.startsWith('IKOOT_EVENT:')}`);
+            
+            // Try to fix common QR format issues
+            let correctedData = qrCodeData;
+            if (qrCodeData) {
+                // Trim whitespace
+                correctedData = qrCodeData.trim();
+                
+                // Handle common case issues
+                if (correctedData.toUpperCase().startsWith('IKOOT_EVENT:')) {
+                    correctedData = correctedData.toUpperCase();
+                    qrLog('QR Format corrected', { original: qrCodeData, corrected: correctedData });
+                }
+            }
+            
+            // Call original function with corrected data
+            return originalHandleQRCodeDetected.call(this, correctedData);
         };
         
         // Override check-in function with test data

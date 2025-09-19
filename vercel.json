@@ -1,24 +1,22 @@
 {
+  "buildCommand": "echo 'No build required'",
+  "outputDirectory": ".",
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/backend/server.js"
-    },
-    {
       "source": "/admin/(.*)",
-      "destination": "/backend/server.js"
+      "destination": "/api"
     },
     {
       "source": "/health",
-      "destination": "/backend/server.js"
+      "destination": "/api"
     },
     {
       "source": "/(.*)",
-      "destination": "/backend/server.js"
+      "destination": "/api"
     }
   ],
   "functions": {
-    "backend/server.js": {
+    "api/index.js": {
       "maxDuration": 30
     }
   }

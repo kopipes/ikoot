@@ -432,15 +432,15 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Initialize database for Vercel
-(async function initializeForVercel() {
-    try {
-        await initDatabase();
-        console.log('✅ Database initialized for Vercel');
-    } catch (error) {
-        console.error('❌ Failed to initialize database:', error);
-    }
-})();
+// Initialize database for Vercel (temporarily disabled for testing)
+// (async function initializeForVercel() {
+//     try {
+//         await initDatabase();
+//         console.log('✅ Database initialized for Vercel');
+//     } catch (error) {
+//         console.error('❌ Failed to initialize database:', error);
+//     }
+// })();
 
 // Export for Vercel serverless function
 module.exports = app;

@@ -293,14 +293,13 @@ class QRScanner {
             let result;
             
             try {
-                // Try the new QR check-in API first
-                response = await fetch('/api/qr-checkin', {
+                // Call the correct events check-in API
+                response = await fetch(`/api/events/${eventId}/checkin`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        eventId: parseInt(eventId),
                         user_email: currentUser.email
                     })
                 });
@@ -390,7 +389,7 @@ class QRScanner {
                 // Update user's points in memory and localStorage
                 if (currentUser && result.user) {
                     currentUser.points = result.user.points;
-                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    localStorage.setItem('ikoot_user', JSON.stringify(currentUser));
                     
                     // Update points display in header if it exists
                     const pointsElement = document.querySelector('.user-points');

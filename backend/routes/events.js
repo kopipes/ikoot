@@ -369,7 +369,7 @@ router.delete('/admin/:id', async (req, res) => {
     }
 });
 
-// Loyalty System - Event Check-in (Database-free version for Vercel)
+// Loyalty System - Event Check-in with proper database integration
 router.post('/:id/checkin', async (req, res) => {
     try {
         const eventId = parseInt(req.params.id);
@@ -384,58 +384,95 @@ router.post('/:id/checkin', async (req, res) => {
             });
         }
 
-        // Event data map matching the real events (IDs 19-26)
-        const eventMap = {
-            19: { title: 'Jakarta Music Festival 2024', location: 'GBK Senayan, Jakarta' },
-            20: { title: 'Tech Summit Jakarta', location: 'Jakarta Convention Center' },
-            21: { title: 'Food & Culture Festival', location: 'Monas Park, Central Jakarta' },
-            22: { title: 'Startup Pitch Competition', location: 'Cyber 2 Tower, Jakarta' },
-            23: { title: 'Art & Design Exhibition', location: 'National Gallery, Jakarta' },
-            24: { title: 'Sports & Wellness Expo', location: 'Jakarta International Expo' },
-            25: { title: 'Photography Workshop', location: 'Creative Hub Jakarta' },
-            26: { title: 'Gaming Championship', location: 'Senayan City Mall' }
-        };
-        
-        const event = eventMap[eventId];
+        // Check if event exists in database first
+        const event = await getQuery('SELECT * FROM events WHERE id = ?', [eventId]);
         
         if (!event) {
             return res.status(404).json({
                 success: false,
-                message: `Event ${eventId} not found. Available events: ${Object.keys(eventMap).join(', ')}`,
-                availableEvents: Object.keys(eventMap)
+                message: `Event ${eventId} not found`,
+                availableEvents: []
             });
         }
+
+        // Find or create user
+        let user = await getQuery('SELECT * FROM users WHERE email = ?', [user_email]);
         
-        // Generate user data based on email
-        const userName = user_email.split('@')[0];
-        const userId = Math.abs(user_email.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a }, 0));
-        
-        // Simulate successful check-in
+        if (!user) {
+            // Create new user if they don't exist
+            const bcrypt = require('bcryptjs');
+            const defaultPassword = await bcrypt.hash('password123', 10);
+            const userName = user_email.split('@')[0];
+            
+            const result = await runQuery(
+                'INSERT INTO users (name, email, password, points) VALUES (?, ?, ?, ?)',
+                [userName, user_email, defaultPassword, 0]
+            );
+            
+            user = await getQuery('SELECT * FROM users WHERE id = ?', [result.lastID]);
+            console.log(`✅ New user created: ${user_email}`);
+        }
+
+        // Check if user has already checked in to this event
+        const existingCheckin = await getQuery(
+            'SELECT * FROM user_check_ins WHERE user_id = ? AND event_id = ?',
+            [user.id, eventId]
+        );
+
+        if (existingCheckin) {
+            return res.status(409).json({
+                success: false,
+                message: `You have already checked in to ${event.title}!`,
+                user_points: user.points,
+                event: {
+                    id: eventId,
+                    title: event.title,
+                    location: event.location
+                }
+            });
+        }
+
+        // Award points for check-in
         const pointsEarned = 5;
-        const totalPoints = Math.floor(Math.random() * 50) + pointsEarned; // Random total between 5-55
+        const newTotalPoints = user.points + pointsEarned;
+
+        // Record the check-in
+        await runQuery(
+            'INSERT INTO user_check_ins (user_id, event_id, event_title, points_earned) VALUES (?, ?, ?, ?)',
+            [user.id, eventId, event.title, pointsEarned]
+        );
+
+        // Update user's total points
+        await runQuery(
+            'UPDATE users SET points = ? WHERE id = ?',
+            [newTotalPoints, user.id]
+        );
+
+        // Get updated user data
+        const updatedUser = await getQuery('SELECT * FROM users WHERE id = ?', [user.id]);
         
         const result = {
             success: true,
             message: `Check-in successful! You earned ${pointsEarned} points at ${event.title}!`,
             points_earned: pointsEarned,
-            total_points: totalPoints,
+            total_points: newTotalPoints,
             event: {
                 id: eventId,
                 title: event.title,
                 location: event.location
             },
             user: {
-                id: userId,
-                name: userName,
-                email: user_email,
-                points: totalPoints
+                id: user.id,
+                name: updatedUser.name,
+                email: updatedUser.email,
+                points: newTotalPoints
             },
             timestamp: new Date().toISOString(),
-            check_in_id: `checkin_${eventId}_${userId}_${Date.now()}`,
-            note: 'Successfully checked in to event'
+            check_in_id: `checkin_${eventId}_${user.id}_${Date.now()}`,
+            note: 'Successfully checked in to event - points awarded and saved to database'
         };
         
-        console.log(`✅ Check-in successful: ${user_email} → Event ${eventId} (${event.title})`);
+        console.log(`✅ Check-in successful: ${user_email} → Event ${eventId} (${event.title}) → ${pointsEarned} points awarded (Total: ${newTotalPoints})`);
         
         return res.status(200).json(result);
         

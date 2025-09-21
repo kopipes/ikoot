@@ -170,11 +170,8 @@ function initializeApp() {
         currentUser = JSON.parse(savedUser);
         console.log('Found saved user:', currentUser);
         
-        // If user has points stored, use them immediately
-        if (currentUser.points) {
-            userPoints = currentUser.points;
-            console.log('Set userPoints from localStorage:', userPoints);
-        }
+        // Load fresh user profile from backend
+        loadUserProfile();
     }
     
     // Update auth state (this will handle hamburger visibility)
@@ -296,25 +293,37 @@ async function handleLogin(e) {
     const email = formData.get('email');
     const password = formData.get('password');
 
-    // Simulate API call
-    setTimeout(() => {
-        // Simple validation for demo
-        if (email && password) {
-            currentUser = {
-                id: 1,
-                name: email.split('@')[0],
-                email: email
-            };
+    try {
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ email, password })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            currentUser = data.user;
+            currentUser.token = data.token;
             
             localStorage.setItem('ikoot_user', JSON.stringify(currentUser));
             updateAuthState();
             closeModal('loginModal');
             showToast('Login successful!', 'success');
+            
+            // Load user's current points
+            await loadUserProfile();
         } else {
-            showToast('Please fill in all fields', 'error');
+            showToast(data.message || 'Login failed', 'error');
         }
-        hideLoading();
-    }, 1500);
+    } catch (error) {
+        console.error('Login error:', error);
+        showToast('Login failed. Please try again.', 'error');
+    }
+    
+    hideLoading();
 }
 
 async function handleSignup(e) {
@@ -327,29 +336,81 @@ async function handleSignup(e) {
     const password = formData.get('password');
     const confirmPassword = formData.get('confirmPassword');
 
-    setTimeout(() => {
-        if (password !== confirmPassword) {
-            showToast('Passwords do not match', 'error');
-            hideLoading();
-            return;
-        }
+    if (password !== confirmPassword) {
+        showToast('Passwords do not match', 'error');
+        hideLoading();
+        return;
+    }
 
-        if (name && email && password) {
-            currentUser = {
-                id: Date.now(),
-                name: name,
-                email: email
-            };
+    try {
+        const response = await fetch(`${API_BASE_URL}/auth/register`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name, email, password })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            currentUser = data.user;
+            currentUser.token = data.token;
             
             localStorage.setItem('ikoot_user', JSON.stringify(currentUser));
             updateAuthState();
             closeModal('signupModal');
             showToast('Account created successfully!', 'success');
+            
+            // Load user's current points
+            await loadUserProfile();
         } else {
-            showToast('Please fill in all fields', 'error');
+            showToast(data.message || 'Registration failed', 'error');
         }
-        hideLoading();
-    }, 1500);
+    } catch (error) {
+        console.error('Signup error:', error);
+        showToast('Registration failed. Please try again.', 'error');
+    }
+    
+    hideLoading();
+}
+
+// Load user profile with current points from backend
+async function loadUserProfile() {
+    if (!currentUser || !currentUser.email) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/user/profile`, {
+            headers: {
+                'x-user-email': currentUser.email
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.user) {
+            // Update current user with latest points
+            currentUser.points = data.user.points;
+            localStorage.setItem('ikoot_user', JSON.stringify(currentUser));
+            
+            // Update UI elements
+            updatePointsDisplay();
+        }
+    } catch (error) {
+        console.error('Error loading user profile:', error);
+    }
+}
+
+// Update points display in UI
+function updatePointsDisplay() {
+    if (currentUser && currentUser.points !== undefined) {
+        const pointsElements = document.querySelectorAll('.user-points, [data-user-points]');
+        pointsElements.forEach(element => {
+            element.textContent = `${currentUser.points} points`;
+        });
+    }
 }
 
 function updateAuthState() {

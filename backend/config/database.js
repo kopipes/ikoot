@@ -2,7 +2,10 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs').promises;
 
-const dbPath = path.join(__dirname, '../database.sqlite');
+// Use persistent volume path on Fly.io, fallback to local path
+const dbPath = process.env.DATABASE_URL ? 
+    process.env.DATABASE_URL.replace('file://', '') : 
+    path.join(__dirname, '../database.sqlite');
 
 let db;
 

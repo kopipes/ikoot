@@ -294,6 +294,120 @@ router.get('/:id/points', async (req, res) => {
     }
 });
 
+// Adjust user points (admin only)
+router.put('/admin/:id/adjust-points', async (req, res) => {
+    try {
+        const userId = parseInt(req.params.id);
+        const { adjustment, reason, admin_email } = req.body;
+        
+        if (!adjustment || adjustment === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Point adjustment amount is required and cannot be zero'
+            });
+        }
+        
+        if (!reason || reason.trim() === '') {
+            return res.status(400).json({
+                success: false,
+                message: 'Reason for point adjustment is required'
+            });
+        }
+        
+        // Verify user exists
+        const user = await getQuery('SELECT id, name, email, points FROM users WHERE id = ?', [userId]);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+        
+        // Calculate new points (prevent negative points)
+        const currentPoints = user.points || 0;
+        const newPoints = Math.max(0, currentPoints + adjustment);
+        const actualAdjustment = newPoints - currentPoints;
+        
+        // Update user points
+        await runQuery('UPDATE users SET points = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [newPoints, userId]);
+        
+        // Log the point adjustment for audit trail
+        await runQuery(`
+            INSERT INTO user_point_adjustments (
+                user_id, admin_email, points_before, points_after, 
+                adjustment_amount, reason, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        `, [userId, admin_email || 'admin', currentPoints, newPoints, actualAdjustment, reason.trim()]);
+        
+        // Get updated user info
+        const updatedUser = await getQuery(`
+            SELECT id, name, email, points,
+                   (SELECT COUNT(*) FROM user_check_ins WHERE user_id = users.id) as total_check_ins
+            FROM users WHERE id = ?
+        `, [userId]);
+        
+        res.json({
+            success: true,
+            message: `Points ${adjustment > 0 ? 'added to' : 'deducted from'} user successfully`,
+            user: updatedUser,
+            adjustment: {
+                previous_points: currentPoints,
+                adjustment_amount: actualAdjustment,
+                new_points: newPoints,
+                reason: reason.trim()
+            }
+        });
+        
+    } catch (error) {
+        console.error('Adjust user points error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to adjust user points',
+            error: error.message
+        });
+    }
+});
+
+// Get user point adjustment history (admin only)
+router.get('/admin/:id/point-history', async (req, res) => {
+    try {
+        const userId = parseInt(req.params.id);
+        
+        // Verify user exists
+        const user = await getQuery('SELECT id, name FROM users WHERE id = ?', [userId]);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+        
+        // Get point adjustment history
+        const adjustments = await getAllQuery(`
+            SELECT id, admin_email, points_before, points_after,
+                   adjustment_amount, reason, created_at
+            FROM user_point_adjustments
+            WHERE user_id = ?
+            ORDER BY created_at DESC
+        `, [userId]);
+        
+        res.json({
+            success: true,
+            user_id: userId,
+            user_name: user.name,
+            adjustments: adjustments || []
+        });
+        
+    } catch (error) {
+        console.error('Get user point history error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get user point history',
+            error: error.message
+        });
+    }
+});
+
 // Get user check-ins with detailed event information (admin only)
 router.get('/admin/:id/checkins', async (req, res) => {
     try {

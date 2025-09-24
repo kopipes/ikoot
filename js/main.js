@@ -1969,3 +1969,646 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 2000); // Delay to ensure everything is loaded
     }
 });
+
+// Redemption System
+let redemptionItems = [];
+let currentUserPoints = 0;
+let pickupEvents = [];
+let currentSelectedItem = null;
+
+// Check if user is logged in
+function isLoggedIn() {
+    return currentUser !== null;
+}
+
+// Show login modal
+function showLoginModal() {
+    openModal('loginModal');
+}
+
+// Show redemption page
+function showRedemptionPage() {
+    if (!isLoggedIn()) {
+        showToast('Please log in to view redemption items', 'error');
+        showLoginModal();
+        return;
+    }
+    
+    // Close mobile menu
+    closeMobileMenu();
+    
+    // Show redemption modal
+    const modal = document.getElementById('redemptionModal');
+    modal.classList.add('active');
+    
+    // Load redemption data
+    loadRedemptionData();
+}
+
+// Load redemption data
+async function loadRedemptionData() {
+    try {
+        // Load user points, redemption items, and pickup events in parallel
+        const [pointsResponse, itemsResponse, eventsResponse] = await Promise.all([
+            fetch('/api/user/profile', {
+                headers: {
+                    'x-user-email': currentUser.email
+                }
+            }),
+            fetch('/api/redemptions/items'),
+            fetch('/api/redemptions/pickup-events')
+        ]);
+
+        if (pointsResponse.ok) {
+            const pointsData = await pointsResponse.json();
+            if (pointsData.success) {
+                currentUserPoints = pointsData.user.points;
+                updateUserPointsDisplay();
+            }
+        }
+
+        if (itemsResponse.ok) {
+            const itemsData = await itemsResponse.json();
+            if (itemsData.success) {
+                redemptionItems = itemsData.items;
+                displayRedemptionItems();
+            }
+        }
+
+        if (eventsResponse.ok) {
+            const eventsData = await eventsResponse.json();
+            if (eventsData.success) {
+                pickupEvents = eventsData.events;
+            }
+        }
+
+        // Show content
+        document.getElementById('userPointsHeader').style.display = 'block';
+        document.getElementById('redemptionTabs').style.display = 'flex';
+        document.getElementById('redemptionFilters').style.display = 'flex';
+
+    } catch (error) {
+        console.error('Error loading redemption data:', error);
+        showToast('Error loading redemption items', 'error');
+    }
+}
+
+// Update user points display
+function updateUserPointsDisplay() {
+    const pointsElement = document.getElementById('userPointsValue');
+    if (pointsElement) {
+        pointsElement.textContent = currentUserPoints.toLocaleString();
+    }
+}
+
+// Display redemption items
+function displayRedemptionItems(filterCategory = 'all') {
+    const container = document.getElementById('redemptionItems');
+    
+    // Filter items by category
+    const filteredItems = filterCategory === 'all' 
+        ? redemptionItems 
+        : redemptionItems.filter(item => item.category === filterCategory);
+    
+    if (filteredItems.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #666;">
+                <i class="fas fa-box-open" style="font-size: 3rem; margin-bottom: 20px; opacity: 0.5;"></i>
+                <h3>No items found</h3>
+                <p>No redemption items available in this category.</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = filteredItems.map(item => {
+        const hasEnoughPoints = currentUserPoints >= item.points_required;
+        const isOutOfStock = item.stock_quantity === 0;
+        const isLowStock = item.stock_quantity > 0 && item.stock_quantity <= 5;
+        
+        let stockText = '';
+        let stockClass = '';
+        if (item.stock_quantity === -1) {
+            stockText = 'Unlimited';
+        } else if (isOutOfStock) {
+            stockText = 'Out of stock';
+            stockClass = 'out-of-stock';
+        } else if (isLowStock) {
+            stockText = `Only ${item.stock_quantity} left`;
+            stockClass = 'low-stock';
+        } else {
+            stockText = `${item.stock_quantity} available`;
+        }
+
+        return `
+            <div class="redemption-item ${!hasEnoughPoints || isOutOfStock ? 'insufficient-points' : ''}" 
+                 onclick="${hasEnoughPoints && !isOutOfStock ? `showRedeemItemModal(${item.id})` : ''}">
+                <img src="${item.image_url}" alt="${item.name}" class="redemption-item-image"
+                     onerror="this.src='https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80'">
+                <div class="redemption-item-content">
+                    <div class="redemption-item-header">
+                        <h4 class="redemption-item-title">${item.name}</h4>
+                        <span class="redemption-points ${!hasEnoughPoints ? 'insufficient' : ''}">${item.points_required} pts</span>
+                    </div>
+                    <p class="redemption-item-description">${item.description}</p>
+                    <div class="redemption-item-footer">
+                        <span class="redemption-category">${item.category}</span>
+                        <span class="redemption-stock ${stockClass}">${stockText}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Show redeem item modal
+function showRedeemItemModal(itemId) {
+    const item = redemptionItems.find(i => i.id === itemId);
+    if (!item) return;
+
+    currentSelectedItem = item;
+    
+    const modal = document.getElementById('redeemItemModal');
+    const content = document.getElementById('redeemItemContent');
+    
+    // Build delivery options
+    let deliveryOptionsHtml = '';
+    if (item.delivery_available || item.pickup_available) {
+        deliveryOptionsHtml = `
+            <div class="delivery-options">
+                <h4>Delivery Method</h4>
+                ${item.pickup_available ? `
+                    <div class="delivery-option">
+                        <input type="radio" id="pickup" name="delivery" value="pickup" onchange="toggleDeliveryOptions('pickup')">
+                        <label for="pickup">Pickup at Event</label>
+                    </div>
+                    <div class="pickup-events" id="pickupEvents">
+                        <label for="pickupEventSelect">Select Event:</label>
+                        <select id="pickupEventSelect">
+                            <option value="">Choose an event...</option>
+                            ${pickupEvents.map(event => `
+                                <option value="${event.id}">${event.title} - ${new Date(event.start_date).toLocaleDateString()}</option>
+                            `).join('')}
+                        </select>
+                    </div>
+                ` : ''}
+                ${item.delivery_available ? `
+                    <div class="delivery-option">
+                        <input type="radio" id="delivery" name="delivery" value="delivery" onchange="toggleDeliveryOptions('delivery')">
+                        <label for="delivery">Home Delivery</label>
+                    </div>
+                    <div class="delivery-form" id="deliveryForm">
+                        <div class="form-group">
+                            <label for="deliveryAddress">Delivery Address:</label>
+                            <textarea id="deliveryAddress" rows="3" placeholder="Enter your full delivery address"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="deliveryPhone">Phone Number:</label>
+                            <input type="tel" id="deliveryPhone" placeholder="Enter your phone number">
+                        </div>
+                        <div class="form-group">
+                            <label for="deliveryNotes">Additional Notes (Optional):</label>
+                            <textarea id="deliveryNotes" rows="2" placeholder="Any special instructions"></textarea>
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+    
+    content.innerHTML = `
+        <div class="redeem-item-details">
+            <img src="${item.image_url}" alt="${item.name}" class="redeem-item-image"
+                 onerror="this.src='https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80'">
+            <h3 class="redeem-item-title">${item.name}</h3>
+            <div class="redeem-item-points">${item.points_required} Points</div>
+            <p class="redeem-item-description">${item.description}</p>
+            
+            ${deliveryOptionsHtml}
+            
+            <div class="redeem-actions">
+                <button class="btn btn-outline" onclick="closeRedeemItemModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="processRedemption()">
+                    <i class="fas fa-shopping-cart"></i> Redeem Now
+                </button>
+            </div>
+        </div>
+    `;
+    
+    modal.classList.add('active');
+}
+
+// Toggle delivery options
+function toggleDeliveryOptions(method) {
+    const pickupDiv = document.getElementById('pickupEvents');
+    const deliveryDiv = document.getElementById('deliveryForm');
+    
+    if (method === 'pickup') {
+        if (pickupDiv) {
+            pickupDiv.classList.add('active');
+        }
+        if (deliveryDiv) {
+            deliveryDiv.classList.remove('active');
+        }
+    } else if (method === 'delivery') {
+        if (deliveryDiv) {
+            deliveryDiv.classList.add('active');
+        }
+        if (pickupDiv) {
+            pickupDiv.classList.remove('active');
+        }
+    }
+}
+
+// Process redemption
+async function processRedemption() {
+    if (!currentSelectedItem) return;
+    
+    const deliveryMethod = document.querySelector('input[name="delivery"]:checked')?.value;
+    
+    if (!deliveryMethod) {
+        showToast('Please select a delivery method', 'error');
+        return;
+    }
+    
+    let redemptionData = {
+        user_id: currentUser.id || currentUser.user_id,
+        redemption_item_id: currentSelectedItem.id,
+        delivery_method: deliveryMethod
+    };
+    
+    console.log('Processing redemption with data:', redemptionData);
+    console.log('Current user:', currentUser);
+    console.log('User ID being sent:', redemptionData.user_id);
+    console.log('Selected item:', currentSelectedItem);
+    
+    if (deliveryMethod === 'pickup') {
+        const pickupEventId = document.getElementById('pickupEventSelect')?.value;
+        if (!pickupEventId) {
+            showToast('Please select a pickup event', 'error');
+            return;
+        }
+        redemptionData.pickup_event_id = parseInt(pickupEventId);
+        
+        const deliveryNotes = document.getElementById('deliveryNotes')?.value;
+        if (deliveryNotes) {
+            redemptionData.delivery_notes = deliveryNotes;
+        }
+    } else if (deliveryMethod === 'delivery') {
+        const deliveryAddress = document.getElementById('deliveryAddress')?.value;
+        const deliveryPhone = document.getElementById('deliveryPhone')?.value;
+        
+        if (!deliveryAddress || !deliveryPhone) {
+            showToast('Please provide delivery address and phone number', 'error');
+            return;
+        }
+        
+        redemptionData.delivery_address = deliveryAddress;
+        redemptionData.delivery_phone = deliveryPhone;
+        
+        const deliveryNotes = document.getElementById('deliveryNotes')?.value;
+        if (deliveryNotes) {
+            redemptionData.delivery_notes = deliveryNotes;
+        }
+    }
+    
+    try {
+        showLoading();
+        
+        const response = await fetch('/api/redemptions/redeem', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(redemptionData)
+        });
+        
+        console.log('Redemption API response status:', response.status);
+        console.log('Redemption API response ok:', response.ok);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('Redemption API result:', result);
+        
+        if (result.success) {
+            try {
+                showToast('Redemption successful!', 'success');
+                closeRedeemItemModal();
+                closeRedemptionModal();
+                
+                // Update user points in currentUser object
+                if (currentUser.points !== undefined) {
+                    currentUser.points -= currentSelectedItem.points_required;
+                    localStorage.setItem('ikoot_user', JSON.stringify(currentUser));
+                }
+                
+                // Update display points
+                currentUserPoints -= currentSelectedItem.points_required;
+                updateUserPointsDisplay();
+                
+                // Reload redemption data to reflect any stock changes
+                loadRedemptionData();
+                
+                console.log('Redemption success handling completed successfully');
+            } catch (successError) {
+                console.error('Error in success handling:', successError);
+                // Don't throw this error, just log it since the redemption itself was successful
+            }
+        } else {
+            console.log('Redemption failed with message:', result.message);
+            showToast(result.message || 'Redemption failed', 'error');
+        }
+        
+    } catch (error) {
+        console.error('Error processing redemption:', error);
+        console.error('Error type:', typeof error);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        showToast(`Error processing redemption: ${error.message}`, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Close modals
+function closeRedemptionModal() {
+    const modal = document.getElementById('redemptionModal');
+    modal.classList.remove('active');
+}
+
+function closeRedeemItemModal() {
+    const modal = document.getElementById('redeemItemModal');
+    modal.classList.remove('active');
+    currentSelectedItem = null;
+}
+
+// Filter redemption items by category
+function filterRedemptionItems(category) {
+    // Update active filter button
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelector(`[data-category="${category}"]`).classList.add('active');
+    
+    // Display filtered items
+    displayRedemptionItems(category);
+}
+
+// Event listeners for redemption modals
+document.addEventListener('DOMContentLoaded', function() {
+    // Redemption modal close buttons
+    const redemptionModalClose = document.getElementById('redemptionModalClose');
+    if (redemptionModalClose) {
+        redemptionModalClose.addEventListener('click', closeRedemptionModal);
+    }
+    
+    const redeemItemModalClose = document.getElementById('redeemItemModalClose');
+    if (redeemItemModalClose) {
+        redeemItemModalClose.addEventListener('click', closeRedeemItemModal);
+    }
+    
+    // Filter buttons
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('filter-btn')) {
+            const category = e.target.getAttribute('data-category');
+            filterRedemptionItems(category);
+        }
+    });
+    
+    // Cancel redemption buttons
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('cancel-redemption-btn') || e.target.closest('.cancel-redemption-btn')) {
+            const button = e.target.classList.contains('cancel-redemption-btn') ? e.target : e.target.closest('.cancel-redemption-btn');
+            const redemptionId = button.getAttribute('data-redemption-id');
+            const points = button.getAttribute('data-points');
+            const itemName = button.getAttribute('data-item-name');
+            
+            if (redemptionId && points && itemName) {
+                cancelRedemption(redemptionId, points, itemName);
+            }
+        }
+    });
+    
+    // Close modals when clicking outside
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('modal')) {
+            e.target.classList.remove('active');
+        }
+    });
+});
+
+// Redemption tab switching
+function showRedemptionTab(tab) {
+    // Update tab buttons
+    document.querySelectorAll('.redemption-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // Show/hide tab content
+    const itemsTab = document.getElementById('itemsTabContent');
+    const historyTab = document.getElementById('historyTabContent');
+    
+    if (tab === 'items') {
+        itemsTab.style.display = 'block';
+        historyTab.style.display = 'none';
+    } else if (tab === 'history') {
+        itemsTab.style.display = 'none';
+        historyTab.style.display = 'block';
+        loadRedemptionHistory();
+    }
+}
+
+// Load user's redemption history
+async function loadRedemptionHistory() {
+    if (!currentUser || !currentUser.id) {
+        console.log('No current user for loading history');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/redemptions/user/${currentUser.id || currentUser.user_id}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            displayRedemptionHistory(data.redemptions);
+        } else {
+            showToast('Error loading redemption history', 'error');
+        }
+    } catch (error) {
+        console.error('Error loading redemption history:', error);
+        showToast('Error loading redemption history', 'error');
+    }
+}
+
+// Display redemption history
+function displayRedemptionHistory(history) {
+    const container = document.getElementById('redemptionHistory');
+    
+    if (!history || history.length === 0) {
+        container.innerHTML = `
+            <div class="no-history">
+                <i class="fas fa-history"></i>
+                <h3>No Redemptions Yet</h3>
+                <p>You haven't redeemed any items yet. Check out the available items and start earning rewards!</p>
+                <button class="btn btn-primary" onclick="showRedemptionTab('items')">Browse Items</button>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = history.map(item => {
+        const statusClass = item.status.toLowerCase().replace(' ', '_');
+        const deliveryMethod = item.delivery_method === 'pickup' 
+            ? `Pickup at ${item.event_title || 'Event'}` 
+            : 'Home Delivery';
+        
+        // Check if item can be cancelled
+        const canCancel = ['pending', 'processing'].includes(item.status.toLowerCase());
+        
+        let deliveryDetails = '';
+        if (item.delivery_method === 'delivery') {
+            deliveryDetails = `
+                <div class="history-delivery-details">
+                    <strong>Address:</strong> ${item.delivery_address}<br>
+                    <strong>Phone:</strong> ${item.delivery_phone}
+                </div>
+            `;
+        } else if (item.delivery_method === 'pickup') {
+            deliveryDetails = `
+                <div class="history-delivery-details">
+                    <strong>Event:</strong> ${item.event_title || 'N/A'}<br>
+                    <strong>Location:</strong> ${item.event_location || 'N/A'}
+                </div>
+            `;
+        }
+        
+        if (item.delivery_notes) {
+            deliveryDetails += `<div class="history-delivery-details" style="margin-top: 8px;"><strong>Notes:</strong> ${item.delivery_notes}</div>`;
+        }
+        
+        return `
+            <div class="history-item">
+                <div class="history-item-header">
+                    <h4 class="history-item-title">${item.item_name}</h4>
+                    <span class="history-status ${statusClass}">${item.status}</span>
+                </div>
+                <div class="history-item-body">
+                    <div class="history-item-details">
+                        <div class="history-detail">
+                            <span class="history-detail-label">Points Used</span>
+                            <span class="history-detail-value history-points-used">${item.points_used} pts</span>
+                        </div>
+                        <div class="history-detail">
+                            <span class="history-detail-label">Date</span>
+                            <span class="history-detail-value history-date">${formatDate(item.redeemed_at)}</span>
+                        </div>
+                    </div>
+                    <div class="history-delivery-info">
+                        <div class="history-delivery-method">${deliveryMethod}</div>
+                        ${deliveryDetails}
+                    </div>
+                    ${canCancel ? `
+                        <div class="history-actions">
+                            <button class="cancel-redemption-btn btn-danger" data-redemption-id="${item.id}" data-points="${item.points_used}" data-item-name="${item.item_name}">
+                                <i class="fas fa-times"></i> Cancel Order
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Format date helper
+function formatDate(dateString) {
+    try {
+        return new Date(dateString).toLocaleDateString('id-ID', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    } catch (error) {
+        return dateString;
+    }
+}
+
+// Cancel redemption function
+async function cancelRedemption(redemptionId, points, itemName) {
+    if (!currentUser || !currentUser.id) {
+        showToast('Please log in to cancel redemption', 'error');
+        return;
+    }
+    
+    // Confirm cancellation
+    const confirmed = confirm(`Are you sure you want to cancel your redemption of "${itemName}"?\n\nYou will get ${points} points back to your account.`);
+    if (!confirmed) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/redemptions/${redemptionId}/cancel`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                user_id: currentUser.id || currentUser.user_id
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            showToast(data.message || 'Redemption cancelled successfully!', 'success');
+            // Refresh the history to show updated status
+            loadRedemptionHistory();
+            // Update user points display if available
+            if (document.getElementById('userPointsCount')) {
+                updateUserPoints();
+            }
+        } else {
+            showToast(data.message || 'Error cancelling redemption', 'error');
+        }
+    } catch (error) {
+        console.error('Error cancelling redemption:', error);
+        showToast('Network error. Please try again.', 'error');
+    }
+}
+
+// Update user points display
+async function updateUserPoints() {
+    if (!currentUser || !currentUser.id) return;
+    
+    try {
+        const response = await fetch(`/api/users/${currentUser.id || currentUser.user_id}/points`);
+        const data = await response.json();
+        
+        if (data.success) {
+            const pointsElement = document.getElementById('userPointsCount');
+            if (pointsElement) {
+                pointsElement.textContent = data.points;
+            }
+        }
+    } catch (error) {
+        console.error('Error updating user points:', error);
+    }
+}
+
+// Make functions globally available
+window.showRedemptionPage = showRedemptionPage;
+window.showRedemptionTab = showRedemptionTab;
+window.showRedeemItemModal = showRedeemItemModal;
+window.closeRedemptionModal = closeRedemptionModal;
+window.closeRedeemItemModal = closeRedeemItemModal;
+window.toggleDeliveryOptions = toggleDeliveryOptions;
+window.processRedemption = processRedemption;
+window.filterRedemptionItems = filterRedemptionItems;
+window.loadRedemptionHistory = loadRedemptionHistory;
+window.cancelRedemption = cancelRedemption;

@@ -86,6 +86,12 @@ class AdminPanel {
         if (userForm) {
             userForm.addEventListener('submit', (e) => this.handleUserSubmit(e));
         }
+        
+        // Point adjustment form
+        const pointAdjustmentForm = document.getElementById('pointAdjustmentForm');
+        if (pointAdjustmentForm) {
+            pointAdjustmentForm.addEventListener('submit', (e) => this.handlePointAdjustmentSubmit(e));
+        }
     }
 
     async checkAuth() {
@@ -211,6 +217,12 @@ class AdminPanel {
                 break;
             case 'promos':
                 await this.loadPromosData();
+                break;
+            case 'redemptions':
+                // Initialize redemption management when page is loaded
+                if (typeof initRedemptionManagement === 'function') {
+                    initRedemptionManagement();
+                }
                 break;
         }
     }
@@ -421,6 +433,12 @@ class AdminPanel {
                     <td>${this.formatDate(user.created_at)}</td>
                     <td>
                         <div class="action-buttons">
+                            <button onclick="adminPanel.showPointAdjustmentModal(${user.id}, '${user.name}', ${user.points || 0})" class="btn-action btn-adjust-points" title="Adjust Points">
+                                <i class="fas fa-coins"></i>
+                            </button>
+                            <button onclick="adminPanel.showPointHistoryModal(${user.id}, '${user.name}')" class="btn-action btn-point-history" title="Point History">
+                                <i class="fas fa-history"></i>
+                            </button>
                             <button onclick="adminPanel.editUser(${user.id})" class="btn-action btn-edit" title="Edit User">
                                 <i class="fas fa-edit"></i>
                             </button>
@@ -488,6 +506,12 @@ class AdminPanel {
                         </div>
                     </div>
                     <div class="mobile-card-actions">
+                        <button onclick="adminPanel.showPointAdjustmentModal(${user.id}, '${user.name}', ${user.points || 0})" class="btn-action btn-adjust-points" title="Adjust Points">
+                            <i class="fas fa-coins"></i> Points
+                        </button>
+                        <button onclick="adminPanel.showPointHistoryModal(${user.id}, '${user.name}')" class="btn-action btn-point-history" title="Point History">
+                            <i class="fas fa-history"></i> History
+                        </button>
                         <button onclick="adminPanel.editUser(${user.id})" class="btn-action btn-edit" title="Edit User">
                             <i class="fas fa-edit"></i> Edit
                         </button>
@@ -1597,6 +1621,153 @@ class AdminPanel {
         }
     }
 
+    // Point Adjustment functions
+    showPointAdjustmentModal(userId, userName, currentPoints) {
+        this.currentEditingUserId = userId;
+        
+        // Update modal title and user info
+        document.getElementById('pointAdjustmentModalTitle').textContent = 'Adjust User Points';
+        
+        const userInfoHtml = `
+            <h4>${userName}</h4>
+            <p>User ID: ${userId}</p>
+            <p class="current-points">Current Points: ${currentPoints}</p>
+        `;
+        document.getElementById('pointAdjustmentUserInfo').innerHTML = userInfoHtml;
+        
+        // Reset form
+        document.getElementById('pointAdjustmentForm').reset();
+        
+        this.showModal('pointAdjustmentModal');
+    }
+    
+    async showPointHistoryModal(userId, userName) {
+        this.showLoading();
+        
+        try {
+            const response = await fetch(`${this.baseURL}/users/admin/${userId}/point-history`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                document.getElementById('pointHistoryModalTitle').textContent = `Point Adjustment History - ${userName}`;
+                
+                const userInfoHtml = `
+                    <h4>${userName}</h4>
+                    <p>User ID: ${userId}</p>
+                `;
+                document.getElementById('pointHistoryUserInfo').innerHTML = userInfoHtml;
+                
+                this.displayPointHistory(data.adjustments);
+                this.showModal('pointHistoryModal');
+            } else {
+                this.showToast('Failed to load point history', 'error');
+            }
+        } catch (error) {
+            console.error('Error loading point history:', error);
+            this.showToast('Failed to load point history', 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+    
+    displayPointHistory(adjustments) {
+        const container = document.getElementById('pointHistoryContainer');
+        
+        if (!adjustments || adjustments.length === 0) {
+            container.innerHTML = `
+                <div class="no-history">
+                    <i class="fas fa-history"></i>
+                    <h4>No Point Adjustments</h4>
+                    <p>This user hasn't had any manual point adjustments yet.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = adjustments.map(adj => {
+            const adjustmentClass = adj.adjustment_amount > 0 ? 'positive' : 'negative';
+            const adjustmentSymbol = adj.adjustment_amount > 0 ? '+' : '';
+            const adjustmentDate = new Date(adj.created_at).toLocaleString('id-ID', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            return `
+                <div class="point-history-item">
+                    <div class="point-history-details">
+                        <div class="point-history-reason">${adj.reason}</div>
+                        <div class="point-history-meta">
+                            Adjusted by: ${adj.admin_email} • ${adjustmentDate}
+                        </div>
+                        <div class="point-history-before-after">
+                            ${adj.points_before} → ${adj.points_after} points
+                        </div>
+                    </div>
+                    <div class="point-history-amount ${adjustmentClass}">
+                        ${adjustmentSymbol}${adj.adjustment_amount}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    async handlePointAdjustmentSubmit(e) {
+        e.preventDefault();
+        this.showLoading();
+        
+        try {
+            const formData = new FormData(e.target);
+            const adjustment = parseInt(formData.get('adjustment'));
+            const reason = formData.get('reason').trim();
+            
+            if (!adjustment || adjustment === 0) {
+                this.showToast('Please enter a valid point adjustment amount', 'error');
+                return;
+            }
+            
+            if (!reason) {
+                this.showToast('Please provide a reason for this adjustment', 'error');
+                return;
+            }
+            
+            const response = await fetch(`${this.baseURL}/users/admin/${this.currentEditingUserId}/adjust-points`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+                },
+                body: JSON.stringify({
+                    adjustment: adjustment,
+                    reason: reason,
+                    admin_email: 'admin@ikoot.com'
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.showToast(result.message, 'success');
+                this.closeModal('pointAdjustmentModal');
+                await this.loadUsersData(); // Refresh users table
+            } else {
+                this.showToast(result.message || 'Failed to adjust points', 'error');
+            }
+        } catch (error) {
+            console.error('Point adjustment error:', error);
+            this.showToast('Failed to adjust points', 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
     // UI Helper functions
     showLoading() {
         document.getElementById('loading').classList.add('active');
@@ -1702,6 +1873,43 @@ window.closeModal = function(modalId) {
 // Global functions for promo type change handling
 window.handlePromoTypeChange = function() {
     adminPanel.handlePromoTypeChange();
+};
+
+// Global utility functions
+window.showLoading = function() {
+    document.getElementById('loading').classList.add('active');
+};
+
+window.hideLoading = function() {
+    document.getElementById('loading').classList.remove('active');
+};
+
+window.showToast = function(message, type = 'info') {
+    const toastContainer = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    
+    const icon = type === 'success' ? 'fa-check-circle' : 
+                type === 'error' ? 'fa-exclamation-circle' : 
+                'fa-info-circle';
+
+    toast.innerHTML = `
+        <i class="fas ${icon}"></i>
+        <span>${message}</span>
+    `;
+
+    toastContainer.appendChild(toast);
+
+    setTimeout(() => {
+        toast.remove();
+    }, 5000);
+};
+
+window.showModal = function(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('active');
+    }
 };
 
 // QR Code functionality

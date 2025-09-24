@@ -42,6 +42,10 @@
                 <i class="fas fa-tags"></i>
                 <span>Promos</span>
             </div>
+            <div class="nav-item" data-page="redemptions">
+                <i class="fas fa-gift"></i>
+                <span>Redemptions</span>
+            </div>
             <div class="nav-item" data-page="analytics">
                 <i class="fas fa-chart-line"></i>
                 <span>Analytics</span>
@@ -293,6 +297,82 @@
                 <div class="mobile-table-container">
                     <div id="promosMobileContainer">
                         <!-- Mobile promo cards will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Redemptions Page -->
+            <div class="page" id="redemptions-page" style="display: none;">
+                <div class="page-tabs">
+                    <button class="tab-btn active" onclick="showRedemptionTab('items')">Redemption Items</button>
+                    <button class="tab-btn" onclick="showRedemptionTab('orders')">Redemption Orders</button>
+                </div>
+                
+                <!-- Redemption Items Tab -->
+                <div class="tab-content" id="redemption-items-tab">
+                    <div class="page-actions">
+                        <button class="btn btn-primary" onclick="showCreateRedemptionItemModal()">
+                            <i class="fas fa-plus"></i> Create Redemption Item
+                        </button>
+                    </div>
+                    
+                    <!-- Desktop Table View -->
+                    <div class="data-table">
+                        <table id="redemptionItemsTable">
+                            <thead>
+                                <tr>
+                                    <th>Image</th>
+                                    <th>Name</th>
+                                    <th>Category</th>
+                                    <th>Points Required</th>
+                                    <th>Stock</th>
+                                    <th>Delivery Options</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="redemptionItemsTableBody">
+                                <!-- Redemption items will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Mobile Card View -->
+                    <div class="mobile-table-container">
+                        <div id="redemptionItemsMobileContainer">
+                            <!-- Mobile redemption item cards will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Redemption Orders Tab -->
+                <div class="tab-content" id="redemption-orders-tab" style="display: none;">
+                    <!-- Desktop Table View -->
+                    <div class="data-table">
+                        <table id="redemptionOrdersTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>User</th>
+                                    <th>Item</th>
+                                    <th>Points Used</th>
+                                    <th>Delivery Method</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="redemptionOrdersTableBody">
+                                <!-- Redemption orders will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Mobile Card View -->
+                    <div class="mobile-table-container">
+                        <div id="redemptionOrdersMobileContainer">
+                            <!-- Mobile redemption order cards will be loaded here -->
+                        </div>
                     </div>
                 </div>
             </div>
@@ -627,9 +707,188 @@
         <div class="spinner"></div>
     </div>
 
+    <!-- Create/Edit Redemption Item Modal -->
+    <div class="modal" id="redemptionItemModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="redemptionItemModalTitle">Create Redemption Item</h3>
+                <button class="modal-close" onclick="closeModal('redemptionItemModal')">&times;</button>
+            </div>
+            <form id="redemptionItemForm" class="modal-body">
+                <div class="form-group">
+                    <label for="itemName">Item Name *</label>
+                    <input type="text" id="itemName" name="name" required 
+                           placeholder="e.g., IKOOT T-Shirt">
+                </div>
+                
+                <div class="form-group">
+                    <label for="itemDescription">Description</label>
+                    <textarea id="itemDescription" name="description" 
+                              placeholder="Describe the redemption item..."></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="itemPointsRequired">Points Required *</label>
+                        <input type="number" id="itemPointsRequired" name="points_required" 
+                               min="1" step="1" required placeholder="e.g., 500">
+                    </div>
+                    <div class="form-group">
+                        <label for="itemCategory">Category *</label>
+                        <select id="itemCategory" name="category" required>
+                            <option value="">Select Category</option>
+                            <option value="Merchandise">Merchandise</option>
+                            <option value="Food & Beverage">Food & Beverage</option>
+                            <option value="Discount">Discount</option>
+                            <option value="Experience">Experience</option>
+                            <option value="General">General</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="itemImageUrl">Image URL</label>
+                    <input type="url" id="itemImageUrl" name="image_url" 
+                           placeholder="https://...">
+                    <div class="image-preview" id="itemImagePreview"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="itemStock">Stock Quantity</label>
+                    <input type="number" id="itemStock" name="stock_quantity" 
+                           min="-1" placeholder="Leave empty or -1 for unlimited">
+                    <small>Use -1 for unlimited stock</small>
+                </div>
+                
+                <div class="form-section">
+                    <h4>Delivery Options</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="itemDelivery" name="delivery_available" checked>
+                                Delivery Available
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="itemPickup" name="pickup_available" checked>
+                                Pickup Available
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="itemActive" name="is_active" checked>
+                        Active (Available for redemption)
+                    </label>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('redemptionItemModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Item
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Redemption Order Status Modal -->
+    <div class="modal" id="redemptionOrderModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Update Redemption Status</h3>
+                <button class="modal-close" onclick="closeModal('redemptionOrderModal')">&times;</button>
+            </div>
+            <form id="redemptionOrderForm" class="modal-body">
+                <div class="form-group">
+                    <label for="orderStatus">Status *</label>
+                    <select id="orderStatus" name="status" required>
+                        <option value="pending">Pending</option>
+                        <option value="processing">Processing</option>
+                        <option value="shipped">Shipped</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="picked_up">Picked Up</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="adminNotes">Admin Notes</label>
+                    <textarea id="adminNotes" name="admin_notes" rows="3"
+                              placeholder="Add any notes about this order..."></textarea>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('redemptionOrderModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Update Status
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Point Adjustment Modal -->
+    <div class="modal" id="pointAdjustmentModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="pointAdjustmentModalTitle">Adjust User Points</h3>
+                <button class="modal-close" onclick="closeModal('pointAdjustmentModal')">&times;</button>
+            </div>
+            <form id="pointAdjustmentForm" class="modal-body">
+                <div class="user-info" id="pointAdjustmentUserInfo">
+                    <!-- User info will be populated here -->
+                </div>
+                
+                <div class="form-group">
+                    <label for="pointAdjustmentAmount">Point Adjustment *</label>
+                    <input type="number" id="pointAdjustmentAmount" name="adjustment" 
+                           required placeholder="Enter positive number to add, negative to deduct">
+                    <small>Use positive numbers to add points, negative numbers to deduct points</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="pointAdjustmentReason">Reason *</label>
+                    <textarea id="pointAdjustmentReason" name="reason" rows="3" 
+                              required placeholder="Please provide a reason for this point adjustment..."></textarea>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('pointAdjustmentModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-coins"></i> Adjust Points
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Point History Modal -->
+    <div class="modal" id="pointHistoryModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3 id="pointHistoryModalTitle">Point Adjustment History</h3>
+                <button class="modal-close" onclick="closeModal('pointHistoryModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="user-info" id="pointHistoryUserInfo">
+                    <!-- User info will be populated here -->
+                </div>
+                
+                <div class="point-history-container" id="pointHistoryContainer">
+                    <!-- Point history will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
 
     <script src="js/admin.js"></script>
+    <script src="js/redemption-admin.js"></script>
 </body>
 </html>

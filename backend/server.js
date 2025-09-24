@@ -13,6 +13,7 @@ const eventRoutes = require('./routes/events');
 const userRoutes = require('./routes/users');
 const promoRoutes = require('./routes/promos');
 const adminRoutes = require('./routes/admin');
+const redemptionRoutes = require('./routes/redemptions');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -52,11 +53,13 @@ app.use('/api/events', eventRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/promos', promoRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/redemptions', redemptionRoutes);
 
 // Add admin route aliases for events, users, promos
 app.use('/api/admin/events', eventRoutes);
 app.use('/api/admin/users', userRoutes);
 app.use('/api/admin/promos', promoRoutes);
+app.use('/api/admin/redemptions', redemptionRoutes);
 
 // Main website route
 app.get('/', (req, res) => {

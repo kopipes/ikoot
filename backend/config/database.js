@@ -174,6 +174,55 @@ async function createTables() {
             user_agent TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (admin_id) REFERENCES users (id)
+        )`,
+        
+        // Redemption items table (barang yang bisa di-redeem)
+        `CREATE TABLE IF NOT EXISTS redemption_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name VARCHAR(255) NOT NULL,
+            description TEXT,
+            points_required INTEGER NOT NULL,
+            category VARCHAR(100) DEFAULT 'General',
+            image_url TEXT,
+            stock_quantity INTEGER DEFAULT -1,
+            is_active BOOLEAN DEFAULT TRUE,
+            delivery_available BOOLEAN DEFAULT TRUE,
+            pickup_available BOOLEAN DEFAULT TRUE,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`,
+        
+        // User redemptions table (history redemption user)
+        `CREATE TABLE IF NOT EXISTS user_redemptions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            redemption_item_id INTEGER NOT NULL,
+            points_used INTEGER NOT NULL,
+            delivery_method VARCHAR(20) NOT NULL CHECK(delivery_method IN ('pickup', 'delivery')),
+            pickup_event_id INTEGER,
+            delivery_address TEXT,
+            delivery_phone VARCHAR(20),
+            delivery_notes TEXT,
+            status VARCHAR(20) DEFAULT 'pending' CHECK(status IN ('pending', 'processing', 'shipped', 'delivered', 'picked_up', 'cancelled')),
+            admin_notes TEXT,
+            redeemed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id),
+            FOREIGN KEY (redemption_item_id) REFERENCES redemption_items (id),
+            FOREIGN KEY (pickup_event_id) REFERENCES events (id)
+        )`,
+        
+        // User point adjustments table (admin audit trail untuk adjustment points)
+        `CREATE TABLE IF NOT EXISTS user_point_adjustments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            admin_email TEXT NOT NULL,
+            points_before INTEGER NOT NULL DEFAULT 0,
+            points_after INTEGER NOT NULL DEFAULT 0,
+            adjustment_amount INTEGER NOT NULL,
+            reason TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         )`
     ];
 
@@ -424,6 +473,107 @@ async function insertSampleData() {
             }
             
             console.log('✅ Sample check-ins created');
+        }
+        
+        // Insert sample redemption items if none exist
+        const redemptionItemsCount = await getQuery('SELECT COUNT(*) as count FROM redemption_items');
+        if (redemptionItemsCount.count === 0) {
+            const sampleRedemptionItems = [
+                {
+                    name: 'IKOOT T-Shirt',
+                    description: 'Official IKOOT branded t-shirt in various sizes (S, M, L, XL). Made from high-quality cotton with comfortable fit.',
+                    points_required: 500,
+                    category: 'Merchandise',
+                    image_url: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+                    stock_quantity: 50,
+                    delivery_available: true,
+                    pickup_available: true
+                },
+                {
+                    name: 'Coffee Voucher',
+                    description: 'Free premium coffee at selected partner cafes across Jakarta. Valid for espresso, americano, or latte.',
+                    points_required: 200,
+                    category: 'Food & Beverage',
+                    image_url: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+                    stock_quantity: -1, // unlimited
+                    delivery_available: false,
+                    pickup_available: true
+                },
+                {
+                    name: 'Event Ticket Discount',
+                    description: '20% discount voucher for your next event ticket purchase. Can be applied to any upcoming IKOOT event.',
+                    points_required: 300,
+                    category: 'Discount',
+                    image_url: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+                    stock_quantity: -1, // unlimited
+                    delivery_available: false,
+                    pickup_available: false
+                },
+                {
+                    name: 'IKOOT Tote Bag',
+                    description: 'Eco-friendly canvas tote bag with IKOOT logo. Perfect for carrying your essentials to events.',
+                    points_required: 350,
+                    category: 'Merchandise',
+                    image_url: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+                    stock_quantity: 30,
+                    delivery_available: true,
+                    pickup_available: true
+                },
+                {
+                    name: 'Premium Event Access',
+                    description: 'VIP access to exclusive IKOOT events including backstage passes and meet & greet opportunities.',
+                    points_required: 1000,
+                    category: 'Experience',
+                    image_url: 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+                    stock_quantity: 10,
+                    delivery_available: false,
+                    pickup_available: true
+                },
+                {
+                    name: 'Food Voucher',
+                    description: 'IDR 50,000 food voucher valid at partner restaurants. Enjoy delicious meals from our curated food partners.',
+                    points_required: 400,
+                    category: 'Food & Beverage',
+                    image_url: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+                    stock_quantity: -1, // unlimited
+                    delivery_available: true,
+                    pickup_available: true
+                },
+                {
+                    name: 'IKOOT Water Bottle',
+                    description: 'Stainless steel water bottle with IKOOT branding. BPA-free and perfect for staying hydrated at events.',
+                    points_required: 250,
+                    category: 'Merchandise',
+                    image_url: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+                    stock_quantity: 25,
+                    delivery_available: true,
+                    pickup_available: true
+                },
+                {
+                    name: 'Event Photography Session',
+                    description: 'Professional photo session at IKOOT events with digital copies of all photos. Perfect for your social media!',
+                    points_required: 800,
+                    category: 'Experience',
+                    image_url: 'https://images.unsplash.com/photo-1554048612-b6ebae92138b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+                    stock_quantity: 5,
+                    delivery_available: false,
+                    pickup_available: true
+                }
+            ];
+            
+            for (const item of sampleRedemptionItems) {
+                await runQuery(`
+                    INSERT INTO redemption_items (
+                        name, description, points_required, category, image_url,
+                        stock_quantity, delivery_available, pickup_available
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                `, [
+                    item.name, item.description, item.points_required, item.category,
+                    item.image_url, item.stock_quantity, item.delivery_available, item.pickup_available
+                ]);
+            }
+            
+            console.log('✅ Sample redemption items created');
         }
 
     } catch (error) {

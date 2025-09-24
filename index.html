@@ -56,6 +56,7 @@
                 </div>
                 <nav class="mobile-nav" id="mobileNav">
                     <a href="#" class="mobile-nav-item" onclick="showMyPoints()">My Points</a>
+                    <a href="#" class="mobile-nav-item" onclick="showRedemptionPage()"><i class="fas fa-gift"></i> Redeem</a>
                     <a href="#" class="mobile-nav-item" onclick="showMyEvents()">My Events</a>
                     <a href="#" class="mobile-nav-item">Edit Profile</a>
                     <a href="#" class="mobile-nav-item">Terms and Conditions</a>
@@ -241,6 +242,77 @@
                     <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #1976D2;"></i>
                     <p>Loading your points...</p>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Redemption Modal -->
+    <div class="modal" id="redemptionModal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h2><i class="fas fa-gift"></i> Redeem Points</h2>
+                <button class="modal-close" id="redemptionModalClose">&times;</button>
+            </div>
+            <div class="modal-body" id="redemptionContent">
+                <!-- User points display -->
+                <div class="user-points-header" id="userPointsHeader" style="display: none;">
+                    <div class="points-display">
+                        <i class="fas fa-coins"></i>
+                        <span class="points-label">Your Points:</span>
+                        <span class="points-value" id="userPointsValue">0</span>
+                    </div>
+                </div>
+
+                <!-- Redemption tabs -->
+                <div class="redemption-tabs" id="redemptionTabs" style="display: none;">
+                    <button class="redemption-tab-btn active" onclick="showRedemptionTab('items')">Available Items</button>
+                    <button class="redemption-tab-btn" onclick="showRedemptionTab('history')">My Redemptions</button>
+                </div>
+
+                <!-- Items Tab -->
+                <div class="redemption-tab-content" id="itemsTabContent">
+                    <!-- Category filters -->
+                    <div class="redemption-filters" id="redemptionFilters" style="display: none;">
+                        <button class="filter-btn active" data-category="all">All</button>
+                        <button class="filter-btn" data-category="Merchandise">Merchandise</button>
+                        <button class="filter-btn" data-category="Food & Beverage">Food & Drink</button>
+                        <button class="filter-btn" data-category="Experience">Experience</button>
+                        <button class="filter-btn" data-category="Discount">Discounts</button>
+                    </div>
+
+                    <!-- Redemption items grid -->
+                    <div class="redemption-items" id="redemptionItems">
+                        <!-- Items will be loaded dynamically -->
+                        <div class="loading-spinner" style="text-align: center; padding: 40px;">
+                            <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #1976D2;"></i>
+                            <p>Loading redemption items...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- History Tab -->
+                <div class="redemption-tab-content" id="historyTabContent" style="display: none;">
+                    <div class="redemption-history" id="redemptionHistory">
+                        <!-- History will be loaded dynamically -->
+                        <div class="loading-spinner" style="text-align: center; padding: 40px;">
+                            <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #1976D2;"></i>
+                            <p>Loading your redemption history...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Redeem Item Details Modal -->
+    <div class="modal" id="redeemItemModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-shopping-cart"></i> Redeem Item</h2>
+                <button class="modal-close" id="redeemItemModalClose">&times;</button>
+            </div>
+            <div class="modal-body" id="redeemItemContent">
+                <!-- Item details will be loaded dynamically -->
             </div>
         </div>
     </div>

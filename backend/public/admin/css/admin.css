@@ -901,7 +901,129 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
     }
 }
 
-/* Responsive Design */
+/* Point Adjustment Styles */
+.user-info {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-left: 4px solid #007bff;
+}
+
+.user-info h4 {
+    margin: 0 0 10px 0;
+    color: #333;
+    font-size: 1.1rem;
+}
+
+.user-info p {
+    margin: 5px 0;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.user-info .current-points {
+    font-weight: bold;
+    color: #28a745;
+    font-size: 1rem;
+}
+
+.point-history-container {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+}
+
+.point-history-item {
+    padding: 12px 15px;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.point-history-item:last-child {
+    border-bottom: none;
+}
+
+.point-history-details {
+    flex: 1;
+}
+
+.point-history-amount {
+    font-weight: bold;
+    font-size: 1rem;
+    min-width: 80px;
+    text-align: right;
+}
+
+.point-history-amount.positive {
+    color: #28a745;
+}
+
+.point-history-amount.negative {
+    color: #dc3545;
+}
+
+.point-history-reason {
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.point-history-meta {
+    font-size: 0.85rem;
+    color: #666;
+}
+
+.point-history-before-after {
+    font-size: 0.8rem;
+    color: #888;
+    margin-top: 3px;
+}
+
+.no-history {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+}
+
+.no-history i {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    opacity: 0.3;
+}
+
+.btn-adjust-points {
+    background: #ffc107;
+    color: #212529;
+    border: 1px solid #ffc107;
+}
+
+.btn-adjust-points:hover {
+    background: #e0a800;
+    border-color: #d39e00;
+    color: #212529;
+}
+
+.btn-point-history {
+    background: #6f42c1;
+    color: white;
+    border: 1px solid #6f42c1;
+}
+
+.btn-point-history:hover {
+    background: #5a32a3;
+    border-color: #512c99;
+}
+
+.modal-large {
+    width: 90%;
+    max-width: 800px;
+}
+
+/* Mobile responsiveness */
 @media (max-width: 768px) {
     .sidebar {
         transform: translateX(-100%);
@@ -977,4 +1099,158 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
         padding: 12px 20px;
         font-size: 0.9rem;
     }
+}
+
+/* Page Tabs */
+.page-tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 30px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.tab-btn {
+    padding: 12px 24px;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-weight: 500;
+    color: #666;
+    transition: all 0.3s ease;
+    border-radius: 8px 8px 0 0;
+}
+
+.tab-btn:hover {
+    background: #f8f9fa;
+    color: #333;
+}
+
+.tab-btn.active {
+    color: #1976D2;
+    border-bottom-color: #1976D2;
+    background: #f8f9fb;
+}
+
+.tab-content {
+    display: block;
+}
+
+.tab-content[style*="display: none"] {
+    display: none !important;
+}
+
+/* Category tags */
+.category-tag {
+    display: inline-block;
+    padding: 4px 8px;
+    background: #e3f2fd;
+    color: #1976d2;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Points badge */
+.points-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    background: #e8f5e8;
+    color: #2e7d32;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Table image */
+.table-image {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+}
+
+/* Mobile card styles for redemptions */
+.mobile-card-image {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+}
+
+.mobile-card-info {
+    flex: 1;
+    margin: 0 15px;
+}
+
+.mobile-card-info h4 {
+    margin: 0 0 5px 0;
+    font-size: 1rem;
+    color: #333;
+}
+
+.mobile-card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #f5f5f5;
+}
+
+.mobile-card-row:last-child {
+    border-bottom: none;
+}
+
+.mobile-card-row .label {
+    font-weight: 500;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+/* Status classes for redemptions */
+.status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-processing {
+    background: #cce5ff;
+    color: #004085;
+}
+
+.status-shipped {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-delivered {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.status-picked_up {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-cancelled {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* Form section styling */
+.form-section {
+    margin: 20px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.form-section h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+    font-size: 1rem;
 }
